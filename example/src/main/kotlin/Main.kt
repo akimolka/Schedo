@@ -5,7 +5,10 @@ import kotlin.time.Duration.Companion.seconds
 fun main() {
     val scheduler = Scheduler()
     scheduler.scheduleAfter(10.seconds){
-        println("Hello world")
+        println("Hello one-time world")
+    }
+    scheduler.scheduleRecurring(10.seconds){
+        println("Hello recurring world")
     }
     scheduler.run()
 }

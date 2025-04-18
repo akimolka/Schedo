@@ -1,3 +1,5 @@
+import task.RecurringTask
+import task.ScheduledTask
 import java.util.concurrent.Executors
 import kotlin.time.Duration
 
@@ -12,11 +14,18 @@ class Scheduler {
         repository.add(ScheduledTask(func, timeSource.markNow() + duration))
     }
 
+    fun scheduleRecurring(period: Duration, func: () -> Unit) {
+        repository.add(RecurringTask(func, timeSource.markNow() + period, period))
+    }
+
     fun run() {
         while (true) {
             val tasksToRun = repository.pickDueExecution()
             for (task in tasksToRun) {
-                executor.submit(task.func)
+                executor.submit{
+                    task.func()
+                    task.completionHandler(this)
+                }
             }
         }
     }
