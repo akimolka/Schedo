@@ -1,18 +1,18 @@
 import task.ScheduledTask
+import java.util.concurrent.CopyOnWriteArrayList
 
 class InMemoryRepository {
-    @Volatile private var tasks = listOf<ScheduledTask>()
-    var counter = 1
+    private val tasks = CopyOnWriteArrayList<ScheduledTask>()
+
 
     fun add(task: ScheduledTask) {
-        tasks = tasks + task
-        counter += 1
+        tasks.add(task)
     }
 
+    @Synchronized
     fun pickDueExecution(): List<ScheduledTask> { // передавать время
-        val (picked, rest) = tasks.partition { it.executionTime.hasPassedNow() }
-        println(counter)
-        tasks = rest
+        val picked = tasks.filter { it.executionTime.hasPassedNow() }
+        tasks.removeAll(picked)
         return picked
     }
 }
