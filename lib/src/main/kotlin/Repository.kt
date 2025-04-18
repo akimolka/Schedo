@@ -1,15 +1,18 @@
 import task.ScheduledTask
 
 class InMemoryRepository {
-    private var tasks = mutableListOf<ScheduledTask>()
+    @Volatile private var tasks = listOf<ScheduledTask>()
+    var counter = 1
 
     fun add(task: ScheduledTask) {
-        tasks.add(task)
+        tasks = tasks + task
+        counter += 1
     }
 
-    fun pickDueExecution(): List<ScheduledTask> {
+    fun pickDueExecution(): List<ScheduledTask> { // передавать время
         val (picked, rest) = tasks.partition { it.executionTime.hasPassedNow() }
-        tasks = rest.toMutableList()
+        println(counter)
+        tasks = rest
         return picked
     }
 }
