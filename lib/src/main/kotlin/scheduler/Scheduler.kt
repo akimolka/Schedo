@@ -1,16 +1,14 @@
+package scheduler
+import repository.InMemoryRepository
+import repository.Repository
 import task.RecurringTask
 import task.ScheduledTask
 import java.time.OffsetTime
 import java.time.temporal.TemporalAmount
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.time.Duration
 
-import kotlin.time.TimeSource
-
-class Scheduler {
-    val repository = InMemoryRepository()
-    val executor = Executors.newCachedThreadPool()
-
+class Scheduler(val repository: Repository = InMemoryRepository(), val executor: ExecutorService = Executors.newCachedThreadPool()) {
     fun scheduleAfter(duration: TemporalAmount, func: () -> Unit) {
         val now = OffsetTime.now()
         repository.add(ScheduledTask(func, now.plus(duration)))

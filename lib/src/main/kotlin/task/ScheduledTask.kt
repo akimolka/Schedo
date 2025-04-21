@@ -1,6 +1,6 @@
 package task
 
-import Scheduler
+import scheduler.Scheduler
 import java.time.OffsetTime
 
 open class ScheduledTask(val func: () -> Unit, val executionTime: OffsetTime) {
