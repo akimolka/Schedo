@@ -23,15 +23,14 @@ class Scheduler {
 
     fun run() {
         while (true) {
-            val tasksToRun = repository.pickDueExecution()
+            val tasksToRun = repository.pickDue(OffsetTime.now())
             for (task in tasksToRun) {
-//                task.func()
-//                task.completionHandler(this)
                 executor.submit{
                     task.func()
                     task.completionHandler(this)
                 }
             }
+            Thread.yield()
         }
     }
 }
