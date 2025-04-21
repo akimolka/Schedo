@@ -1,13 +1,13 @@
 import Scheduler
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import java.time.Duration
+
 
 fun main() {
     val scheduler = Scheduler()
-//    scheduler.scheduleAfter(10.seconds){
-//        println("Hello one-time world")
-//    }
-    scheduler.scheduleRecurring(1.seconds){
+    scheduler.scheduleAfter(Duration.ofSeconds(5)){
+        println("Hello one-time world")
+    }
+    scheduler.scheduleRecurring(Duration.ofSeconds(5)){
         println("Hello recurring world")
     }
     scheduler.run()

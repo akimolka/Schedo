@@ -1,9 +1,9 @@
 package task
 
 import Scheduler
-import kotlin.time.Duration
-import kotlin.time.TimeMark
+import java.time.OffsetTime
+import java.time.temporal.TemporalAmount
 
-class RecurringTask(func: () -> Unit, executionTime: TimeMark, period: Duration) : ScheduledTask(func, executionTime) {
+class RecurringTask(func: () -> Unit, executionTime: OffsetTime, period: TemporalAmount) : ScheduledTask(func, executionTime) {
     override val completionHandler = {scheduler: Scheduler -> scheduler.scheduleRecurring(period, func)}
 }
