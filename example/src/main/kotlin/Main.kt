@@ -1,5 +1,11 @@
-import helloFromLib
+import Scheduler
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
-    helloFromLib()
+    val scheduler = Scheduler()
+    scheduler.scheduleAfter(10.seconds){
+        println("Hello world")
+    }
+    scheduler.run()
 }
