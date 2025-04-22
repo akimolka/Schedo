@@ -7,8 +7,12 @@ fun main() {
     scheduler.scheduleAfter(Duration.ofSeconds(5)){
         println("Hello one-time world")
     }
-    scheduler.scheduleRecurring(Duration.ofSeconds(5)){
+    scheduler.scheduleRecurring(Duration.ofSeconds(1)){
         println("Hello recurring world")
     }
-    scheduler.run()
+
+
+    scheduler.start()
+    Thread.sleep(10 * 1000)
+    scheduler.stop()
 }
