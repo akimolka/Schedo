@@ -30,6 +30,10 @@ fun main() {
 
 
     scheduler.start()
+    scheduler.scheduleAfter("PrintsABC", Duration.ofSeconds(3)){
+        println("ABC")
+    }
+
     Thread.sleep(10 * 1000)
     scheduler.stop()
 }

@@ -18,9 +18,19 @@ class Scheduler(val repository: Repository = InMemoryRepository(), val executor:
         repository.add(ScheduledTask(func, now.plus(duration)))
     }
 
+    fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) {
+        val now = OffsetTime.now()
+        repository.add(ScheduledTask(func, now.plus(duration), name))
+    }
+
     fun scheduleRecurring(period: TemporalAmount, func: () -> Unit) {
         val now = OffsetTime.now()
         repository.add(RecurringTask(func, now.plus(period), period))
+    }
+
+    fun scheduleRecurring(name: String, period: TemporalAmount, func: () -> Unit) {
+        val now = OffsetTime.now()
+        repository.add(RecurringTask(func, now.plus(period), period, name))
     }
 
     fun run() {
