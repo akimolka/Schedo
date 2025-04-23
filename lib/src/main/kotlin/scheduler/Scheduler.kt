@@ -43,6 +43,7 @@ class Scheduler(val repository: Repository = InMemoryRepository(), val executor:
                 }
             }
             if (stopFlag) {
+                executor.shutdown()
                 break
             }
             Thread.yield()
