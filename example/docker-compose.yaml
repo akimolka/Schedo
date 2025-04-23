@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: 'bitnami/postgresql:17.4.0'
+    ports:
+      - 15432:5432
+    environment:
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: app_password
+      POSTGRES_DB: app_db
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d app_db" ]
+      interval: 15s
+      start_period: 30s
+      timeout: 5s
+      retries: 5
+
