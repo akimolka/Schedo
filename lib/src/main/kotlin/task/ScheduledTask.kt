@@ -1,9 +1,41 @@
 package task
 
 import scheduler.Scheduler
-import java.time.OffsetTime
+import java.time.Duration
+import kotlin.system.measureTimeMillis
 
-open class ScheduledTask(val func: () -> Unit, val executionTime: OffsetTime) {
-    val name = util.getRandomString(10)
-    open val completionHandler: (scheduler: Scheduler) -> Unit = {println("completed")}
+@JvmInline
+value class TaskName(val value: String)
+
+/**
+ * Общее описание задачи
+ */
+abstract class ScheduledTask(
+    val name: TaskName,
+) {
+    /**
+     * Полезная нагрузка
+     */
+    abstract fun run()
+
+    /**
+     * Вызывается при успешном завершении
+     */
+    abstract fun onCompleted(scheduler: Scheduler)
+
+    /**
+     * Вызывается при неудачном завершении
+     */
+    abstract fun onFailed(e: Exception, scheduler: Scheduler)
+
+    fun exec(scheduler: Scheduler) = try {
+        val timeSpending = measureTimeMillis {
+            run()
+        }
+        scheduler.taskManager.updateTaskStatus(name, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        onCompleted(scheduler)
+    } catch (e: Exception) {
+        scheduler.taskManager.updateTaskStatus(name, TaskResult.Failed(e))
+        onFailed(e, scheduler)
+    }
 }

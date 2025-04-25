@@ -1,10 +1,10 @@
+import org.postgresql.ds.PGPoolingDataSource
 import org.postgresql.ds.PGSimpleDataSource
-import javax.sql.DataSource
-import java.sql.DriverManager;
-
-import scheduler.Scheduler
 import scheduler.SchedulerBuilder
+import java.sql.DriverManager
 import java.time.Duration
+import javax.sql.DataSource
+
 
 fun dataPGDataSource(pgUrl: String, pgUser: String, pgPassword: String): DataSource = PGSimpleDataSource().apply {
     setUrl(pgUrl)
@@ -16,15 +16,25 @@ fun main() {
     val pgUrl = "jdbc:postgresql://localhost:15432/app_db"
     val pgUser = "app_user"
     val pgPassword = "app_password"
-    val conn = DriverManager.getConnection(pgUrl, pgUser, pgPassword)
+//    val conn = DriverManager.getConnection(pgUrl, pgUser, pgPassword)
+
+
+//    val source: PGPoolingDataSource = PGPoolingDataSource()
+//    source.setDataSourceName("A Data Source")
+//    source.serverName = "localhost:15432"
+//
+//    source.setDatabaseName("test")
+//    source.setUser("testuser")
+//    source.setPassword("testpassword")
+//    source.setMaxConnections(10)
 
     val scheduler = SchedulerBuilder()
-        .setRepository(repository.JDBCRepository(conn))
+//        .setRepository(repository.PostgresRepository(source))
         .build()
-    scheduler.scheduleAfter(Duration.ofSeconds(5)){
+    scheduler.scheduleAfter("test1", Duration.ofSeconds(5)) {
         println("Hello one-time world")
     }
-    scheduler.scheduleRecurring(Duration.ofSeconds(1)){
+    scheduler.scheduleRecurring("test2", Duration.ofSeconds(1)) {
         println("Hello recurring world")
     }
 

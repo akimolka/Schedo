@@ -1,20 +1,19 @@
 package repository
 
-import task.ScheduledTask
-import java.time.OffsetTime
+import task.TaskName
+import java.time.OffsetDateTime
 import java.util.concurrent.CopyOnWriteArrayList
 
 class InMemoryRepository: Repository {
-    private val tasks = CopyOnWriteArrayList<ScheduledTask>()
+    private val tasks = CopyOnWriteArrayList<TaskEntity>()
 
-    override fun add(task: ScheduledTask) {
+    override fun add(task: TaskEntity) {
         tasks.add(task)
     }
 
-    @Synchronized
-    override fun pickDue(timePoint: OffsetTime): List<ScheduledTask> {
+    override fun pickTaskNamesDue(timePoint: OffsetDateTime): List<TaskName> {
         val picked = tasks.filter { it.executionTime.isBefore(timePoint) }
-        tasks.removeAll(picked)
-        return picked
+        tasks.removeAll(picked.toSet())
+        return picked.map { it.name }
     }
 }

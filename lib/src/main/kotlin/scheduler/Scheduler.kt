@@ -1,42 +1,52 @@
 package scheduler
+
 import repository.InMemoryRepository
 import repository.Repository
 import task.RecurringTask
 import task.ScheduledTask
-import java.time.OffsetTime
+import task.TaskManager
+import task.TaskName
+import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
-class Scheduler(val repository: Repository = InMemoryRepository(), val executor: ExecutorService = Executors.newCachedThreadPool()) {
+class Scheduler(
+    repository: Repository = InMemoryRepository(),
+    private val executor: ExecutorService = Executors.newCachedThreadPool()
+) {
+
+    val taskManager: TaskManager = TaskManager(repository)
+
     @Volatile
     private var stopFlag = false;
 
-    fun scheduleAfter(duration: TemporalAmount, func: () -> Unit) {
-        val now = OffsetTime.now()
-        repository.add(ScheduledTask(func, now.plus(duration)))
-    }
-
-    fun scheduleRecurring(period: TemporalAmount, func: () -> Unit) {
-        val now = OffsetTime.now()
-        repository.add(RecurringTask(func, now.plus(period), period))
-    }
-
-    fun run() {
-        while (true) {
-            val tasksToRun = repository.pickDue(OffsetTime.now())
-            for (task in tasksToRun) {
-                executor.submit{
-                    task.func()
-                    task.completionHandler(this)
-                }
-            }
-            if (stopFlag) {
-                break
-            }
-            Thread.yield()
+    private fun run() {
+        while (!stopFlag) {
+            taskManager.pickDueNow().forEach { executor.submit { it.exec(this) } }
         }
+    }
+
+    fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) {
+        taskManager.schedule(object : ScheduledTask(TaskName(name)) {
+            override fun run() {
+                func()
+            }
+
+            override fun onCompleted(scheduler: Scheduler) {}
+            override fun onFailed(e: Exception, scheduler: Scheduler) {}
+
+        }, OffsetDateTime.now() + duration)
+
+    }
+
+    fun scheduleRecurring(name: String, period: TemporalAmount, func: () -> Unit) {
+        taskManager.schedule(object : RecurringTask(TaskName(name), period) {
+            override fun run() {
+                func()
+            }
+        }, OffsetDateTime.now() + period)
     }
 
     fun start() {
@@ -46,6 +56,7 @@ class Scheduler(val repository: Repository = InMemoryRepository(), val executor:
     }
 
     fun stop() {
-        stopFlag = true;
+        stopFlag = true
+        executor.shutdown()
     }
 }

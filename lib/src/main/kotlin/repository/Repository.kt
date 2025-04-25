@@ -1,9 +1,11 @@
 package repository
 
-import task.ScheduledTask
-import java.time.OffsetTime
+import task.TaskName
+import java.time.OffsetDateTime
+
+data class TaskEntity(val name: TaskName, val executionTime: OffsetDateTime)
 
 interface Repository {
-    fun add(task: ScheduledTask)
-    fun pickDue(timePoint: OffsetTime): List<ScheduledTask>
+    fun add(task: TaskEntity)
+    fun pickTaskNamesDue(timePoint: OffsetDateTime): List<TaskName>
 }
