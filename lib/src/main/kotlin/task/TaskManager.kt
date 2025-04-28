@@ -1,10 +1,13 @@
 package task
 
 import components.TaskResolver
+import io.github.oshai.kotlinlogging.KotlinLogging
 import repository.Repository
 import repository.TaskEntity
 import java.time.Duration
 import java.time.OffsetDateTime
+
+private val logger = KotlinLogging.logger {}
 
 sealed interface TaskResult {
     class Success(val spendingTime: Duration) : TaskResult
@@ -29,11 +32,12 @@ class TaskManager(
     }
 
     fun schedule(taskName: TaskName, moment: OffsetDateTime) {
+        logger.info{"schedule task $taskName to execute at $moment"}
         repository.add(TaskEntity(taskName, moment))
     }
 
     fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
-        repository.add(TaskEntity(task.name, moment))
+        schedule(task.name, moment)
     }
 }

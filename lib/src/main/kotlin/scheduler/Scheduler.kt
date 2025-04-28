@@ -11,6 +11,9 @@ import java.time.temporal.TemporalAmount
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
+import io.github.oshai.kotlinlogging.KotlinLogging
+
+private val logger = KotlinLogging.logger {}
 
 class Scheduler(
     repository: Repository = InMemoryRepository(),
@@ -51,12 +54,14 @@ class Scheduler(
     }
 
     fun start() {
+        logger.info{ "Scheduler started" }
         thread {
             run()
         }
     }
 
     fun stop() {
+        logger.info{ "Scheduler received a request to stop" }
         stopFlag = true
         executor.shutdown()
     }

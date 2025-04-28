@@ -14,14 +14,14 @@ fun dataPGDataSource(pgUrl: String, pgUser: String, pgPassword: String): DataSou
 }
 
 fun main() {
-    val source: PGPoolingDataSource = PGPoolingDataSource()
-    source.setDataSourceName("A Data Source")
-    source.serverName = "localhost:15432"
-
-    source.setDatabaseName("app_db")
-    source.setUser("app_user")
-    source.setPassword("app_password")
-    source.setMaxConnections(10)
+//    val source: PGPoolingDataSource = PGPoolingDataSource()
+//    source.setDataSourceName("A Data Source")
+//    source.serverName = "localhost:15432"
+//
+//    source.setDatabaseName("app_db")
+//    source.setUser("app_user")
+//    source.setPassword("app_password")
+//    source.setMaxConnections(10)
 
 //    val source: PGPoolingDataSource = PGPoolingDataSource()
 //    source.setDataSourceName("A Data Source")
@@ -33,7 +33,7 @@ fun main() {
 //    source.setMaxConnections(10)
 
     val scheduler = SchedulerBuilder()
-        .setRepository(repository.PostgresRepository(source))
+        //.setRepository(repository.PostgresRepository(source))
         .build()
     scheduler.scheduleAfter("test1", Duration.ofSeconds(5)) {
         println("Hello one-time world")
