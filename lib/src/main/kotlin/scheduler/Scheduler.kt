@@ -1,7 +1,7 @@
 package scheduler
 
 import repository.InMemoryRepository
-import repository.Repository
+import repository.TasksRepository
 import task.RecurringTask
 import task.Task
 import task.TaskManager
@@ -16,7 +16,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    repository: Repository = InMemoryRepository(),
+    repository: TasksRepository = InMemoryRepository(),
     private val executor: ExecutorService = Executors.newCachedThreadPool()
 ) {
 

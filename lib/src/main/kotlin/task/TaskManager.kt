@@ -2,20 +2,15 @@ package task
 
 import components.TaskResolver
 import io.github.oshai.kotlinlogging.KotlinLogging
-import repository.Repository
+import repository.TasksRepository
 import repository.TaskEntity
-import java.time.Duration
+import repository.TaskResult
 import java.time.OffsetDateTime
 
 private val logger = KotlinLogging.logger {}
 
-sealed interface TaskResult {
-    class Success(val spendingTime: Duration) : TaskResult
-    class Failed(val e: Exception) : TaskResult
-}
-
 class TaskManager(
-    private val repository: Repository,
+    private val repository: TasksRepository,
     private val taskResolver: TaskResolver = TaskResolver(),
 ) {
 

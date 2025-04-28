@@ -1,5 +1,6 @@
 package task
 
+import repository.TaskResult
 import scheduler.Scheduler
 import java.time.Duration
 import kotlin.system.measureTimeMillis

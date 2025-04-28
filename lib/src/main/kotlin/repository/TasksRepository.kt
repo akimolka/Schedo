@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 
 data class TaskEntity(val name: TaskName, val executionTime: OffsetDateTime)
 
-interface Repository {
+interface TasksRepository {
     fun add(task: TaskEntity)
     fun pickTaskNamesDue(timePoint: OffsetDateTime): List<TaskName>
 }

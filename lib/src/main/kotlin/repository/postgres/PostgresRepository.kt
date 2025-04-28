@@ -1,29 +1,18 @@
-package repository
+package repository.postgres
 
+import repository.TasksRepository
+import repository.TaskEntity
 import task.TaskName
 import java.time.OffsetDateTime
 import javax.sql.DataSource
 
 
-class PostgresRepository(
+class PostgresTasksRepository(
     private val dataSource: DataSource
-) : Repository {
+) : TasksRepository {
 
     init {
-        val createTableSQL = """
-            CREATE TABLE IF NOT EXISTS SchedoTasks (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255),
-                time TIMESTAMP WITH TIME ZONE NULL,
-                picked BOOLEAN NOT NULL DEFAULT FALSE
-            )
-        """.trimIndent()
-
-        dataSource.connection.use { connection ->
-            connection.createStatement().use { stmt ->
-                stmt.executeUpdate(createTableSQL)
-            }
-        }
+        createTasksTable(dataSource)
     }
 
     override fun add(task: TaskEntity) {
@@ -39,7 +28,6 @@ class PostgresRepository(
                 pstmt.executeUpdate()
             }
         }
-
     }
 
     override fun pickTaskNamesDue(timePoint: OffsetDateTime): List<TaskName> {
