@@ -8,9 +8,9 @@ import kotlin.system.measureTimeMillis
 value class TaskName(val value: String)
 
 /**
- * Общее описание задачи
+ * Общее описание задачи без привязки ко времени исполнения
  */
-abstract class ScheduledTask(
+abstract class Task(
     val name: TaskName,
 ) {
     /**

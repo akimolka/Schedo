@@ -16,7 +16,7 @@ class TaskManager(
     private val taskResolver: TaskResolver = TaskResolver(),
 ) {
 
-    fun pickDueNow(): List<ScheduledTask> =
+    fun pickDueNow(): List<Task> =
         repository.pickTaskNamesDue(OffsetDateTime.now()).mapNotNull { taskResolver.getTask(it) }
 
 
@@ -32,7 +32,7 @@ class TaskManager(
         repository.add(TaskEntity(taskName, moment))
     }
 
-    fun schedule(task: ScheduledTask, moment: OffsetDateTime) {
+    fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
         repository.add(TaskEntity(task.name, moment))
     }

@@ -12,8 +12,9 @@ class PostgresRepository(
     init {
         val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoTasks (
-                name VARCHAR(255) PRIMARY KEY,
-                time TIME NOT NULL,
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255),
+                time TIMESTAMP WITH TIME ZONE NULL,
                 picked BOOLEAN NOT NULL DEFAULT FALSE
             )
         """.trimIndent()
@@ -29,7 +30,6 @@ class PostgresRepository(
         val insertSQL = """
             INSERT INTO SchedoTasks (name, time)
             VALUES (?, ?)
-            ON CONFLICT (name) DO NOTHING
         """.trimIndent()
 
         dataSource.connection.use { connection ->
@@ -45,7 +45,7 @@ class PostgresRepository(
     override fun pickTaskNamesDue(timePoint: OffsetDateTime): List<TaskName> {
         val sql = """
             WITH due AS (
-              SELECT name
+              SELECT id, name
               FROM SchedoTasks
               WHERE time <= ? 
                 AND picked = FALSE
@@ -53,27 +53,20 @@ class PostgresRepository(
             )
             UPDATE SchedoTasks
             SET picked = TRUE
-            WHERE name IN (SELECT name FROM due)
+            WHERE id IN (SELECT id FROM due)
             RETURNING name
         """.trimIndent()
 
         return dataSource.connection.use { connection ->
-            connection.autoCommit = false
-            try {
-                connection.prepareStatement(sql).use { pstmt ->
-                    pstmt.setObject(1, timePoint)
-                    pstmt.executeQuery().use { rs ->
-                        val names = mutableListOf<TaskName>()
-                        while (rs.next()) {
-                            names += TaskName(rs.getString("name"))
-                        }
-                        connection.commit()
-                        names
+            connection.prepareStatement(sql).use { pstmt ->
+                pstmt.setObject(1, timePoint)
+                pstmt.executeQuery().use { rs ->
+                    val names = mutableListOf<TaskName>()
+                    while (rs.next()) {
+                        names += TaskName(rs.getString("name"))
                     }
+                    names
                 }
-            } catch (ex: java.sql.SQLException) {
-                connection.rollback()
-                throw ex
             }
         }
     }

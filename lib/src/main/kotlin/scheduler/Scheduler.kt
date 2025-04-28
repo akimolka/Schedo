@@ -3,7 +3,7 @@ package scheduler
 import repository.InMemoryRepository
 import repository.Repository
 import task.RecurringTask
-import task.ScheduledTask
+import task.Task
 import task.TaskManager
 import task.TaskName
 import java.time.OffsetDateTime
@@ -25,11 +25,12 @@ class Scheduler(
     private fun run() {
         while (!stopFlag) {
             taskManager.pickDueNow().forEach { executor.submit { it.exec(this) } }
+            Thread.yield()
         }
     }
 
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) {
-        taskManager.schedule(object : ScheduledTask(TaskName(name)) {
+        taskManager.schedule(object : Task(TaskName(name)) {
             override fun run() {
                 func()
             }

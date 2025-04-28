@@ -3,6 +3,7 @@ import org.postgresql.ds.PGSimpleDataSource
 import scheduler.SchedulerBuilder
 import java.sql.DriverManager
 import java.time.Duration
+import javax.sql.ConnectionPoolDataSource
 import javax.sql.DataSource
 
 
@@ -13,11 +14,14 @@ fun dataPGDataSource(pgUrl: String, pgUser: String, pgPassword: String): DataSou
 }
 
 fun main() {
-    val pgUrl = "jdbc:postgresql://localhost:15432/app_db"
-    val pgUser = "app_user"
-    val pgPassword = "app_password"
-//    val conn = DriverManager.getConnection(pgUrl, pgUser, pgPassword)
+    val source: PGPoolingDataSource = PGPoolingDataSource()
+    source.setDataSourceName("A Data Source")
+    source.serverName = "localhost:15432"
 
+    source.setDatabaseName("app_db")
+    source.setUser("app_user")
+    source.setPassword("app_password")
+    source.setMaxConnections(10)
 
 //    val source: PGPoolingDataSource = PGPoolingDataSource()
 //    source.setDataSourceName("A Data Source")
@@ -29,7 +33,7 @@ fun main() {
 //    source.setMaxConnections(10)
 
     val scheduler = SchedulerBuilder()
-//        .setRepository(repository.PostgresRepository(source))
+        .setRepository(repository.PostgresRepository(source))
         .build()
     scheduler.scheduleAfter("test1", Duration.ofSeconds(5)) {
         println("Hello one-time world")
