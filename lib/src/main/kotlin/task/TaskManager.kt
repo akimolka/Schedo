@@ -2,20 +2,22 @@ package task
 
 import components.TaskResolver
 import io.github.oshai.kotlinlogging.KotlinLogging
-import repository.TasksRepository
-import repository.TaskEntity
+import repository.Repository
+import repository.ScheduledTaskInstance
 import repository.TaskResult
 import java.time.OffsetDateTime
+import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 
 class TaskManager(
-    private val repository: TasksRepository,
+    private val repository: Repository,
     private val taskResolver: TaskResolver = TaskResolver(),
 ) {
 
-    fun pickDueNow(): List<Task> =
-        repository.pickTaskNamesDue(OffsetDateTime.now()).mapNotNull { taskResolver.getTask(it) }
+    fun pickDueNow(): List<TaskInstance> =
+        repository.tasksRepository.pickTaskInstancesDue(OffsetDateTime.now())
+            .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let { TaskInstance(id, it) } }
 
 
     fun updateTaskStatus(taskName: TaskName, result: TaskResult) {
@@ -27,8 +29,9 @@ class TaskManager(
     }
 
     fun schedule(taskName: TaskName, moment: OffsetDateTime) {
-        logger.info{"schedule task $taskName to execute at $moment"}
-        repository.add(TaskEntity(taskName, moment))
+        val taskInstanceID = TaskInstanceID(UUID.randomUUID())
+        logger.info{"schedule taskInstance $taskInstanceID of task $taskName to execute at $moment"}
+        repository.tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
     }
 
     fun schedule(task: Task, moment: OffsetDateTime) {

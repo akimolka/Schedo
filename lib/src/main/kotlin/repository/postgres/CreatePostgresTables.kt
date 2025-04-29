@@ -5,7 +5,7 @@ import javax.sql.DataSource
 fun createTasksTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoTasks (
-                id SERIAL PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 name VARCHAR(255),
                 time TIMESTAMP WITH TIME ZONE NOT NULL,
                 picked BOOLEAN NOT NULL DEFAULT FALSE
@@ -22,11 +22,12 @@ fun createTasksTable(dataSource: DataSource) {
 fun createStatusTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoStatus (
-                name VARCHAR(255) PRIMARY KEY,
-                status VARCHAR(255),
+                id UUID references SchedoTasks(id),
+                status VARCHAR(20),
                 scheduledAt TIMESTAMP WITH TIME ZONE NOT NULL,
+                enqueuedAt TIMESTAMP WITH TIME ZONE NULL,
                 startedAt TIMESTAMP WITH TIME ZONE NULL,
-                finishedAt TIMESTAMP WITH TIME ZONE NULL,
+                finishedAt TIMESTAMP WITH TIME ZONE NULL
             )
         """.trimIndent()
 

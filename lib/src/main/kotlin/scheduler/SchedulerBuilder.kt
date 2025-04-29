@@ -1,15 +1,14 @@
 package scheduler
 
-import repository.InMemoryRepository
-import repository.TasksRepository
+import repository.*
 import java.util.concurrent.Executors
 
 class SchedulerBuilder {
-    private var repository: TasksRepository = InMemoryRepository()
+    private var repository: Repository = Repository(RepositoryType.InMemory)
     private var executor = Executors.newCachedThreadPool()
 
-    fun setRepository(repo: TasksRepository): SchedulerBuilder {
-        repository = repo
+    fun setRepository(repositoryType: RepositoryType): SchedulerBuilder {
+        repository = Repository(repositoryType)
         return this
     }
 

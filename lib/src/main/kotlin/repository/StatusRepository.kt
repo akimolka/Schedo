@@ -10,6 +10,7 @@ sealed interface TaskResult {
 
 interface StatusRepository {
     fun schedule(name: TaskName)
+    fun enqueue(name: TaskName)
     fun start(name: TaskName)
     fun finish(name: TaskName, result: TaskResult)
 }

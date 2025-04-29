@@ -5,7 +5,7 @@ import java.sql.DriverManager
 import java.time.Duration
 import javax.sql.ConnectionPoolDataSource
 import javax.sql.DataSource
-
+import repository.RepositoryType
 
 fun dataPGDataSource(pgUrl: String, pgUser: String, pgPassword: String): DataSource = PGSimpleDataSource().apply {
     setUrl(pgUrl)
@@ -33,7 +33,7 @@ fun main() {
 //    source.setMaxConnections(10)
 
     val scheduler = SchedulerBuilder()
-        .setRepository(repository.postgres.PostgresRepository(source))
+        .setRepository(RepositoryType.Postgres(source))
         .build()
     scheduler.scheduleAfter("test1", Duration.ofSeconds(5)) {
         println("Hello one-time world")

@@ -1,23 +1,20 @@
 package scheduler
 
-import repository.InMemoryRepository
-import repository.TasksRepository
-import task.RecurringTask
-import task.Task
-import task.TaskManager
-import task.TaskName
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
+import repository.Repository
+import repository.RepositoryType
+import task.*
 
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    repository: TasksRepository = InMemoryRepository(),
-    private val executor: ExecutorService = Executors.newCachedThreadPool()
+    private val repository: Repository = Repository(RepositoryType.InMemory),
+    private val executor: ExecutorService = Executors.newCachedThreadPool(),
 ) {
 
     val taskManager: TaskManager = TaskManager(repository)
@@ -33,14 +30,10 @@ class Scheduler(
     }
 
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) {
-        taskManager.schedule(object : Task(TaskName(name)) {
+        taskManager.schedule(object : OneTimeTask(TaskName(name)) {
             override fun run() {
                 func()
             }
-
-            override fun onCompleted(scheduler: Scheduler) {}
-            override fun onFailed(e: Exception, scheduler: Scheduler) {}
-
         }, OffsetDateTime.now() + duration)
 
     }

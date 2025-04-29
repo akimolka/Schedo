@@ -1,15 +1,14 @@
 package task
 
-import repository.TaskResult
 import scheduler.Scheduler
-import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 @JvmInline
 value class TaskName(val value: String)
 
 /**
  * Общее описание задачи без привязки ко времени исполнения
+ * Содержит название, полезную нагрузку и хендлеры
+ * При каждом планировании от задачи создаётся её инстанс
  */
 abstract class Task(
     val name: TaskName,
@@ -28,15 +27,4 @@ abstract class Task(
      * Вызывается при неудачном завершении
      */
     abstract fun onFailed(e: Exception, scheduler: Scheduler)
-
-    fun exec(scheduler: Scheduler) = try {
-        val timeSpending = measureTimeMillis {
-            run()
-        }
-        scheduler.taskManager.updateTaskStatus(name, TaskResult.Success(Duration.ofMillis(timeSpending)))
-        onCompleted(scheduler)
-    } catch (e: Exception) {
-        scheduler.taskManager.updateTaskStatus(name, TaskResult.Failed(e))
-        onFailed(e, scheduler)
-    }
 }
