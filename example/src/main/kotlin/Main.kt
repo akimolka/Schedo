@@ -20,19 +20,24 @@ fun main() {
     val scheduler = SchedulerBuilder()
         //.dataSource(source)
         .build()
-    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
-        println("Hello one-time world")
-    }
-    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
-        println("Hello recurring world")
-    }
-    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
-        Thread.sleep(10 * 1000)
-        println("Looong task finally completed")
-    }
+//    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
+//        println("Hello one-time world")
+//    }
+//    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
+//        println("Hello recurring world")
+//    }
+//    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
+//        Thread.sleep(10 * 1000)
+//        println("Looong task finally completed")
+//    }
 
+    // Default exponential backoff is +2s, +4s, +8s, ... (max 3 retry)
+    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0)) {
+        println("Hello one-time world")
+        throw RuntimeException("Ooops")
+    }
 
     scheduler.start()
-    Thread.sleep(10 * 1000)
+    Thread.sleep(20 * 1000)
     scheduler.stop()
 }

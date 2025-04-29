@@ -13,9 +13,9 @@ abstract class RecurringTask(
         scheduler.taskManager.schedule(name, moment)
     }
 
-    override fun onFailed(e: Exception, scheduler: Scheduler) {
-        // можно посчитать количество ретраев например, не планировать задачу
-        val moment = scheduler.dateTimeService.now().plus(period)
-        scheduler.taskManager.schedule(name, moment)
-    }
+//    override fun onFailed(e: Exception, scheduler: Scheduler) {
+//        // можно посчитать количество ретраев например, не планировать задачу
+//        val moment = scheduler.dateTimeService.now().plus(period)
+//        scheduler.taskManager.schedule(name, moment)
+//    }
 }

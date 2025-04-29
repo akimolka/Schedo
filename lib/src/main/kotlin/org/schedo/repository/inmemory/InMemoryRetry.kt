@@ -1,0 +1,17 @@
+package repository.ram
+
+import repository.RetryRepository
+import repository.Status
+import task.TaskName
+import java.time.OffsetDateTime
+
+class InMemoryRetry: RetryRepository {
+    // TODO
+    override fun getLastFail(name: TaskName): OffsetDateTime? {
+        return null
+    }
+
+    override fun getNLast(name: TaskName, count: Int): List<Status> {
+       return emptyList()
+    }
+}
