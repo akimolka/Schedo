@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
+import manager.TaskManager
 import repository.Repository
 import repository.RepositoryType
 import task.*

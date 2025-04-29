@@ -1,9 +1,9 @@
-package components
+package manager
 
-import io.github.oshai.kotlinlogging.KotlinLogging
 import task.Task
 import task.TaskName
 import java.util.concurrent.ConcurrentHashMap
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 

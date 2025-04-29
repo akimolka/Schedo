@@ -1,12 +1,15 @@
-package task
+package manager
 
-import components.TaskResolver
-import io.github.oshai.kotlinlogging.KotlinLogging
 import repository.Repository
 import repository.ScheduledTaskInstance
 import repository.TaskResult
+import task.Task
+import task.TaskInstance
+import task.TaskInstanceID
+import task.TaskName
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
