@@ -1,8 +1,10 @@
 package repository.postgres
 
+import repository.Status
 import repository.StatusRepository
 import repository.TaskResult
-import task.TaskName
+import task.TaskInstanceID
+import java.time.OffsetDateTime
 import javax.sql.DataSource
 
 class PostgresStatusRepository (
@@ -13,29 +15,55 @@ class PostgresStatusRepository (
         createStatusTable(dataSource)
     }
 
-    override fun schedule(name: TaskName) {
-//        val updateSQL = """
-//            INSERT INTO table (name, status, scheduledAt)
-//            VALUES(1, "A", 19) ON DUPLICATE KEY UPDATE
-//            name="A", age=19
-//        """.trimIndent()
-//
-//        dataSource.connection.use { connection ->
-//            connection.prepareStatement(insertSQL).use { pstmt ->
-//                pstmt.setString(1, task.name.value)
-//                pstmt.setObject(2, task.executionTime)
-//                pstmt.executeUpdate()
-//            }
-//        }
+    override fun schedule(instance: TaskInstanceID, moment: OffsetDateTime) {
+        val insertSQL = """
+            INSERT INTO SchedoStatus (id, status, scheduledAt)
+            VALUES(?, ?, ?)
+        """.trimIndent()
+
+        dataSource.connection.use { connection ->
+            connection.prepareStatement(insertSQL).use { pstmt ->
+                pstmt.setObject(1, instance.value)
+                pstmt.setString(2, Status.SCHEDULED.name)
+                pstmt.setObject(3, moment)
+                pstmt.executeUpdate()
+            }
+        }
     }
 
-    override fun enqueue(name: TaskName) {}
+    override fun enqueue(instance: TaskInstanceID, moment: OffsetDateTime) =
+        updateStatus(instance, Status.ENQUEUED, "enqueuedAt",  moment)
 
-    override fun start(name: TaskName) {
+    override fun start(instance: TaskInstanceID, moment: OffsetDateTime) =
+        updateStatus(instance, Status.STARTED, "startedAt",  moment)
 
+    override fun finish(instance: TaskInstanceID, result: TaskResult, moment: OffsetDateTime) {
+        val status = when (result) {
+            is TaskResult.Success -> Status.COMPLETED
+            is TaskResult.Failed  -> Status.FAILED
+        }
+        updateStatus(instance, status, "finishedAt", moment)
     }
 
-    override fun finish(name: TaskName, result: TaskResult) {
+    private fun updateStatus(
+        instance: TaskInstanceID,
+        status: Status,
+        column: String,
+        moment: OffsetDateTime,
+    ) {
+        val updateSQL = """
+            UPDATE SchedoStatus
+            SET status = ?, $column = ?
+            WHERE id = ?
+        """.trimIndent()
 
+        dataSource.connection.use { conn ->
+            conn.prepareStatement(updateSQL).use { pstmt ->
+                pstmt.setString(1, status.name)
+                pstmt.setObject(2, moment)
+                pstmt.setObject(3, instance.value)
+                pstmt.executeUpdate()
+            }
+        }
     }
 }

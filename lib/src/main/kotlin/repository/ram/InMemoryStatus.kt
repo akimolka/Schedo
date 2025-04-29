@@ -2,11 +2,12 @@ package repository.ram
 
 import repository.StatusRepository
 import repository.TaskResult
-import task.TaskName
+import task.TaskInstanceID
+import java.time.OffsetDateTime
 
-class InMemoryStatus : StatusRepository{
-    override fun schedule(name: TaskName) {}
-    override fun enqueue(name: TaskName) {}
-    override fun start(name: TaskName) {}
-    override fun finish(name: TaskName, result: TaskResult) {}
+class InMemoryStatus : StatusRepository {
+    override fun schedule(instance: TaskInstanceID, moment: OffsetDateTime) {}
+    override fun enqueue(instance: TaskInstanceID, moment: OffsetDateTime) {}
+    override fun start(instance: TaskInstanceID, moment: OffsetDateTime) {}
+    override fun finish(instance: TaskInstanceID, result: TaskResult, moment: OffsetDateTime) {}
 }

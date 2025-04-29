@@ -3,6 +3,7 @@ package task
 import repository.TaskResult
 import scheduler.Scheduler
 import java.time.Duration
+import java.time.OffsetDateTime
 import java.util.*
 import kotlin.system.measureTimeMillis
 
@@ -23,13 +24,14 @@ class TaskInstance(
     private val task: Task,
 ) {
     fun exec(scheduler: Scheduler) = try {
+        scheduler.taskManager.updateTaskStatusStart(id)
         val timeSpending = measureTimeMillis {
             task.run()
         }
-        scheduler.taskManager.updateTaskStatus(task.name, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        scheduler.taskManager.updateTaskStatusFinish(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
         task.onCompleted(scheduler)
     } catch (e: Exception) {
-        scheduler.taskManager.updateTaskStatus(task.name, TaskResult.Failed(e))
+        scheduler.taskManager.updateTaskStatusFinish(id, TaskResult.Failed(e))
         task.onFailed(e, scheduler)
     }
 }

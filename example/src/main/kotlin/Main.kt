@@ -35,11 +35,15 @@ fun main() {
     val scheduler = SchedulerBuilder()
         .setRepository(RepositoryType.Postgres(source))
         .build()
-    scheduler.scheduleAfter("test1", Duration.ofSeconds(5)) {
+    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
         println("Hello one-time world")
     }
-    scheduler.scheduleRecurring("test2", Duration.ofSeconds(1)) {
+    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
         println("Hello recurring world")
+    }
+    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
+        Thread.sleep(10 * 1000)
+        println("Looong task finally completed")
     }
 
 

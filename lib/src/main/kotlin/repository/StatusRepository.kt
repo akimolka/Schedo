@@ -1,16 +1,21 @@
 package repository
 
-import task.TaskName
+import task.TaskInstanceID
 import java.time.Duration
+import java.time.OffsetDateTime
 
 sealed interface TaskResult {
     class Success(val spendingTime: Duration) : TaskResult
     class Failed(val e: Exception) : TaskResult
 }
 
+enum class Status {
+    SCHEDULED, ENQUEUED, STARTED, COMPLETED, FAILED
+}
+
 interface StatusRepository {
-    fun schedule(name: TaskName)
-    fun enqueue(name: TaskName)
-    fun start(name: TaskName)
-    fun finish(name: TaskName, result: TaskResult)
+    fun schedule(instance: TaskInstanceID, moment: OffsetDateTime)
+    fun enqueue(instance: TaskInstanceID, moment: OffsetDateTime)
+    fun start(instance: TaskInstanceID, moment: OffsetDateTime)
+    fun finish(instance: TaskInstanceID, result: TaskResult, moment: OffsetDateTime)
 }

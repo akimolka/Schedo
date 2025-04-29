@@ -17,13 +17,19 @@ class TaskManager(
 
     fun pickDueNow(): List<TaskInstance> =
         repository.tasksRepository.pickTaskInstancesDue(OffsetDateTime.now())
-            .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let { TaskInstance(id, it) } }
+            .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
+                repository.statusRepository.enqueue(id, OffsetDateTime.now())
+                TaskInstance(id, it)
+            } }
 
+    fun updateTaskStatusStart(taskInstanceID: TaskInstanceID) {
+        repository.statusRepository.start(taskInstanceID, OffsetDateTime.now())
+    }
 
-    fun updateTaskStatus(taskName: TaskName, result: TaskResult) {
-        // TODO: update task status in DB
+    fun updateTaskStatusFinish(taskInstanceID: TaskInstanceID, result: TaskResult) {
+        repository.statusRepository.finish(taskInstanceID, result, OffsetDateTime.now())
         when (result) {
-            is TaskResult.Failed -> {}
+            is TaskResult.Failed -> logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
             is TaskResult.Success -> {}
         }
     }
@@ -32,6 +38,7 @@ class TaskManager(
         val taskInstanceID = TaskInstanceID(UUID.randomUUID())
         logger.info{"schedule taskInstance $taskInstanceID of task $taskName to execute at $moment"}
         repository.tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
+        repository.statusRepository.schedule(taskInstanceID, moment)
     }
 
     fun schedule(task: Task, moment: OffsetDateTime) {
