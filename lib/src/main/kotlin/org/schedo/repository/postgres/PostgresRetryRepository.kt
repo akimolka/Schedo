@@ -12,6 +12,7 @@ import javax.sql.DataSource
 class PostgresRetryRepository (
     private val dataSource: DataSource
 ) : RetryRepository {
+    // TODO хранить количество падений
     private val lastNFinishedQuery = """
             WITH ids AS (
               SELECT id

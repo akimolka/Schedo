@@ -4,9 +4,15 @@ import java.time.Duration
 import java.time.OffsetDateTime
 
 sealed class RetryPolicy(val maxRetries: Int) {
-    //data object DoNotRetry : RetryPolicy
-    class FixedDelay(maxRetries: Int = 3, val delay: Duration = Duration.ofSeconds(10)) : RetryPolicy(maxRetries)
+    class FixedDelay(maxRetries: Int = 3, val delay: Duration = Duration.ofSeconds(10)) : RetryPolicy(maxRetries) {
+        override fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime): OffsetDateTime {
+            TODO("Not yet implemented")
+        }
+    }
+
     class ExpBackoff(maxRetries: Int = 3, val firstDelay: Duration = Duration.ofSeconds(2), val multiplier: Double = 2.0) : RetryPolicy(maxRetries)
+
+    abstract fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime): OffsetDateTime
 }
 
 fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime, retryPolicy: RetryPolicy): OffsetDateTime {

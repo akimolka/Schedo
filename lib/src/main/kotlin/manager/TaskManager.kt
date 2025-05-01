@@ -23,6 +23,7 @@ class TaskManager(
     fun pickDueNow(): List<TaskInstance> =
         repository.tasksRepository.pickTaskInstancesDue(OffsetDateTime.now())
             .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
+                // task.enqueued()
                 repository.statusRepository.enqueue(id, OffsetDateTime.now())
                 TaskInstance(id, it)
             } }
@@ -52,6 +53,7 @@ class TaskManager(
     }
 
     fun retry(taskName: TaskName, retryPolicy: RetryPolicy) {
+        // Task{ onFailed(context) } в context передавать количество failed
         val failedCount = repository.retryRepository.getFailedCount(taskName, retryPolicy.maxRetries)
         if (failedCount < retryPolicy.maxRetries) {
             val lastFailed = repository.retryRepository.getLastFail(taskName)
