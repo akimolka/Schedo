@@ -2,7 +2,7 @@ package org.schedo.repository.postgres
 
 import org.schedo.repository.ScheduledTaskInstance
 import org.schedo.repository.TasksRepository
-import org.schedo.task.TaskInstanceFullName
+import org.schedo.task.TaskInstanceName
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import java.time.OffsetDateTime
@@ -34,7 +34,7 @@ class PostgresTasksRepository(
         }
     }
 
-    override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceFullName> {
+    override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName> {
         val sql = """
             WITH due AS (
               SELECT id, name
@@ -53,9 +53,9 @@ class PostgresTasksRepository(
             connection.prepareStatement(sql).use { pstmt ->
                 pstmt.setObject(1, timePoint)
                 pstmt.executeQuery().use { rs ->
-                    val instances = mutableListOf<TaskInstanceFullName>()
+                    val instances = mutableListOf<TaskInstanceName>()
                     while (rs.next()) {
-                        instances += TaskInstanceFullName(
+                        instances += TaskInstanceName(
                             TaskInstanceID(rs.getObject("id", UUID::class.java)),
                             TaskName(rs.getString("name")))
                     }

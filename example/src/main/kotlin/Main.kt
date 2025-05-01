@@ -8,13 +8,14 @@ import javax.sql.DataSource
 
 fun main() {
     val source: PGPoolingDataSource = PGPoolingDataSource()
-    source.setDataSourceName("A Data Source")
-    source.serverName = "localhost:15432"
-
-    source.setDatabaseName("app_db")
-    source.setUser("app_user")
-    source.setPassword("app_password")
-    source.setMaxConnections(10)
+        .apply {
+            dataSourceName = "A Data Source"
+            serverName = "localhost:15432"
+            databaseName = "app_db"
+            user = "app_db"
+            password = "app_password"
+            maxConnections = 10
+        }
 
     val scheduler = SchedulerBuilder()
         //.dataSource(source)
