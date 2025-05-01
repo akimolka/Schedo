@@ -9,11 +9,13 @@ abstract class RecurringTask(
     private val period: TemporalAmount
 ) : Task(name) {
     override fun onCompleted(scheduler: Scheduler) {
-        scheduler.taskManager.schedule(name, OffsetDateTime.now().plus(period))
+        val moment = scheduler.dateTimeService.now().plus(period)
+        scheduler.taskManager.schedule(name, moment)
     }
 
     override fun onFailed(e: Exception, scheduler: Scheduler) {
         // можно посчитать количество ретраев например, не планировать задачу
-        scheduler.taskManager.schedule(name, OffsetDateTime.now().plus(period))
+        val moment = scheduler.dateTimeService.now().plus(period)
+        scheduler.taskManager.schedule(name, moment)
     }
 }

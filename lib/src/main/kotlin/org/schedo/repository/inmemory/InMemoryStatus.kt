@@ -1,4 +1,4 @@
-package org.schedo.repository.ram
+package org.schedo.repository.inmemory
 
 import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository

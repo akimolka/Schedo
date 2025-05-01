@@ -1,4 +1,4 @@
-package org.schedo.repository.ram
+package org.schedo.repository.inmemory
 
 import org.schedo.repository.ScheduledTaskInstance
 import org.schedo.repository.TasksRepository

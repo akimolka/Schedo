@@ -7,18 +7,17 @@ import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.manager.TaskManager
-import org.schedo.repository.Repository
-import org.schedo.repository.RepositoryType
 import org.schedo.task.*
+import org.schedo.util.DateTimeService
+import org.schedo.util.DefaultDateTimeService
 
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    private val repository: Repository = Repository(RepositoryType.InMemory),
+    val taskManager: TaskManager = TaskManager(),
     private val executor: ExecutorService = Executors.newCachedThreadPool(),
+    val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
-
-    val taskManager: TaskManager = TaskManager(repository)
 
     @Volatile
     private var stopFlag = false;
@@ -35,7 +34,7 @@ class Scheduler(
             override fun run() {
                 func()
             }
-        }, OffsetDateTime.now() + duration)
+        }, dateTimeService.now() + duration)
 
     }
 
@@ -44,7 +43,7 @@ class Scheduler(
             override fun run() {
                 func()
             }
-        }, OffsetDateTime.now() + period)
+        }, dateTimeService.now() + period)
     }
 
     fun start() {

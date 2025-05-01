@@ -5,7 +5,6 @@ import java.sql.DriverManager
 import java.time.Duration
 import javax.sql.ConnectionPoolDataSource
 import javax.sql.DataSource
-import org.schedo.repository.RepositoryType
 
 fun main() {
     val source: PGPoolingDataSource = PGPoolingDataSource()
@@ -18,7 +17,7 @@ fun main() {
     source.setMaxConnections(10)
 
     val scheduler = SchedulerBuilder()
-        //.setRepository(RepositoryType.Postgres(source))
+        //.dataSource(source)
         .build()
     scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
         println("Hello one-time world")
