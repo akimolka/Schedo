@@ -2,7 +2,7 @@ package org.schedo.repository.postgres
 
 import javax.sql.DataSource
 
-fun createTasksTable(dataSource: DataSource) {
+private fun createTasksTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoTasks (
                 id UUID PRIMARY KEY,
@@ -19,7 +19,7 @@ fun createTasksTable(dataSource: DataSource) {
     }
 }
 
-fun createStatusTable(dataSource: DataSource) {
+private fun createStatusTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoStatus (
                 id UUID references SchedoTasks(id),
@@ -36,4 +36,9 @@ fun createStatusTable(dataSource: DataSource) {
             stmt.executeUpdate(createTableSQL)
         }
     }
+}
+
+fun createPostgresTables(dataSource: DataSource) {
+    createTasksTable(dataSource)
+    createStatusTable(dataSource)
 }

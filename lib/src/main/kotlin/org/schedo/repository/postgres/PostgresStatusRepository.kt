@@ -2,7 +2,6 @@ package org.schedo.repository.postgres
 
 import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository
-import org.schedo.repository.TaskResult
 import org.schedo.task.TaskInstanceID
 import java.time.OffsetDateTime
 import javax.sql.DataSource
@@ -10,10 +9,6 @@ import javax.sql.DataSource
 class PostgresStatusRepository (
     private val dataSource: DataSource
 ) : StatusRepository {
-
-    init {
-        createStatusTable(dataSource)
-    }
 
     override fun schedule(instance: TaskInstanceID, moment: OffsetDateTime) {
         val insertSQL = """
@@ -31,26 +26,15 @@ class PostgresStatusRepository (
         }
     }
 
-    override fun enqueue(instance: TaskInstanceID, moment: OffsetDateTime) =
-        updateStatus(instance, Status.ENQUEUED, "enqueuedAt",  moment)
-
-    override fun start(instance: TaskInstanceID, moment: OffsetDateTime) =
-        updateStatus(instance, Status.STARTED, "startedAt",  moment)
-
-    override fun finish(instance: TaskInstanceID, result: TaskResult, moment: OffsetDateTime) {
-        val status = when (result) {
-            is TaskResult.Success -> Status.COMPLETED
-            is TaskResult.Failed  -> Status.FAILED
+    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime) {
+        val column = when (status) {
+            Status.SCHEDULED -> "scheduledAt"
+            Status.ENQUEUED -> "enqueuedAt"
+            Status.STARTED -> "startedAt"
+            Status.COMPLETED -> "finishedAt"
+            Status.FAILED -> "finishedAt"
         }
-        updateStatus(instance, status, "finishedAt", moment)
-    }
 
-    private fun updateStatus(
-        instance: TaskInstanceID,
-        status: Status,
-        column: String,
-        moment: OffsetDateTime,
-    ) {
         val updateSQL = """
             UPDATE SchedoStatus
             SET status = ?, $column = ?

@@ -1,6 +1,7 @@
 package org.schedo.task
 
-import org.schedo.repository.TaskResult
+import org.schedo.manager.TaskManager
+import org.schedo.manager.TaskResult
 import org.schedo.scheduler.Scheduler
 import java.time.Duration
 import java.util.*
@@ -33,15 +34,19 @@ abstract class Task(
      */
     abstract fun onFailed(e: Exception, scheduler: Scheduler)
 
+    fun whenEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
+        taskManager.updateTaskStatusEnqueued(id)
+    }
+
     fun exec(id: TaskInstanceID, scheduler: Scheduler) = try {
-        scheduler.taskManager.updateTaskStatusStart(id)
+        scheduler.taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {
             run()
         }
-        scheduler.taskManager.updateTaskStatusFinish(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
         onCompleted(scheduler)
     } catch (e: Exception) {
-        scheduler.taskManager.updateTaskStatusFinish(id, TaskResult.Failed(e))
+        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
         onFailed(e, scheduler)
     }
 }

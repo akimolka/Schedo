@@ -1,13 +1,7 @@
 package org.schedo.repository
 
 import org.schedo.task.TaskInstanceID
-import java.time.Duration
 import java.time.OffsetDateTime
-
-sealed interface TaskResult {
-    class Success(val spendingTime: Duration) : TaskResult
-    class Failed(val e: Exception) : TaskResult
-}
 
 enum class Status {
     SCHEDULED, ENQUEUED, STARTED, COMPLETED, FAILED
@@ -15,7 +9,5 @@ enum class Status {
 
 interface StatusRepository {
     fun schedule(instance: TaskInstanceID, moment: OffsetDateTime)
-    fun enqueue(instance: TaskInstanceID, moment: OffsetDateTime)
-    fun start(instance: TaskInstanceID, moment: OffsetDateTime)
-    fun finish(instance: TaskInstanceID, result: TaskResult, moment: OffsetDateTime)
+    fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime)
 }

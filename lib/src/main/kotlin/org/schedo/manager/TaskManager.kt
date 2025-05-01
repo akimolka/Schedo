@@ -1,7 +1,6 @@
 package org.schedo.manager
 
 import org.schedo.repository.ScheduledTaskInstance
-import org.schedo.repository.TaskResult
 import org.schedo.task.Task
 import org.schedo.task.TaskInstance
 import org.schedo.task.TaskInstanceID
@@ -13,8 +12,19 @@ import org.schedo.repository.*
 import org.schedo.repository.inmemory.*
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
+import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
+
+sealed interface TaskResult {
+    class Success(val spendingTime: Duration) : TaskResult
+    class Failed(val e: Exception) : TaskResult
+}
+
+fun TaskResult.toStatus(): Status = when(this) {
+    is TaskResult.Failed -> Status.FAILED
+    is TaskResult.Success -> Status.COMPLETED
+}
 
 class TaskManager(
     private val tasksRepository: TasksRepository = InMemoryTasks(),
@@ -26,16 +36,20 @@ class TaskManager(
     fun pickDueNow(): List<TaskInstance> =
         tasksRepository.pickTaskInstancesDue(dateTimeService.now())
             .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
-                statusRepository.enqueue(id, dateTimeService.now())
+                it.whenEnqueued(id, this)
                 TaskInstance(id, it)
             } }
 
-    fun updateTaskStatusStart(taskInstanceID: TaskInstanceID) {
-        statusRepository.start(taskInstanceID, dateTimeService.now())
+    fun updateTaskStatusEnqueued(taskInstanceID: TaskInstanceID) {
+        statusRepository.updateStatus(Status.ENQUEUED, taskInstanceID, dateTimeService.now())
     }
 
-    fun updateTaskStatusFinish(taskInstanceID: TaskInstanceID, result: TaskResult) {
-        statusRepository.finish(taskInstanceID, result, dateTimeService.now())
+    fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) {
+        statusRepository.updateStatus(Status.STARTED, taskInstanceID, dateTimeService.now())
+    }
+
+    fun updateTaskStatusFinished(taskInstanceID: TaskInstanceID, result: TaskResult) {
+        statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now())
         when (result) {
             is TaskResult.Failed -> logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
             is TaskResult.Success -> {}

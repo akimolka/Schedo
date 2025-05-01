@@ -14,10 +14,6 @@ class PostgresTasksRepository(
     private val dataSource: DataSource
 ) : TasksRepository {
 
-    init {
-        createTasksTable(dataSource)
-    }
-
     override fun add(instance: ScheduledTaskInstance) {
         val insertSQL = """
             INSERT INTO SchedoTasks (id, name, time)

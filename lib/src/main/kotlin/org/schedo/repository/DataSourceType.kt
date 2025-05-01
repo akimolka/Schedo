@@ -1,9 +1,5 @@
 package org.schedo.repository
 
-import org.schedo.repository.inmemory.InMemoryTasks
-import org.schedo.repository.postgres.PostgresStatusRepository
-import org.schedo.repository.postgres.PostgresTasksRepository
-import org.schedo.repository.inmemory.InMemoryStatus
 import javax.sql.DataSource
 
 /**
@@ -17,8 +13,8 @@ sealed class DataSourceType(val name: String) {
         fun autodetect(dataSource: DataSource): DataSourceType {
             return dataSource.connection.use { conn ->
                 when (val product = conn.metaData.databaseProductName) {
-                    DataSourceType.Postgres.name  -> DataSourceType.Postgres
-                    else                          -> DataSourceType.Other(product)
+                    Postgres.name  -> Postgres
+                    else           -> Other(product)
                 }
             }
         }

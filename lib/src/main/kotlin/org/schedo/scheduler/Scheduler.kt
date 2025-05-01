@@ -1,6 +1,5 @@
 package org.schedo.scheduler
 
-import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
