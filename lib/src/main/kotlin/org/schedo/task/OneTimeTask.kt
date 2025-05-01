@@ -1,6 +1,6 @@
-package task
+package org.schedo.task
 
-import scheduler.Scheduler
+import org.schedo.scheduler.Scheduler
 
 abstract class OneTimeTask (
     name: TaskName,

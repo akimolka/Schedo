@@ -1,9 +1,9 @@
-package repository.ram
+package org.schedo.repository.ram
 
-import repository.ScheduledTaskInstance
-import repository.TasksRepository
-import task.TaskInstanceFullName
-import task.TaskName
+import org.schedo.repository.ScheduledTaskInstance
+import org.schedo.repository.TasksRepository
+import org.schedo.task.TaskInstanceFullName
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 import java.util.concurrent.CopyOnWriteArrayList
 

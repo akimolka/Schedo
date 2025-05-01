@@ -1,4 +1,4 @@
-package repository.postgres
+package org.schedo.repository.postgres
 
 import javax.sql.DataSource
 

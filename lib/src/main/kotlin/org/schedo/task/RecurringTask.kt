@@ -1,6 +1,6 @@
-package task
+package org.schedo.task
 
-import scheduler.Scheduler
+import org.schedo.scheduler.Scheduler
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 

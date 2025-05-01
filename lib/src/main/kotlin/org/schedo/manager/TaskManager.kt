@@ -1,12 +1,12 @@
-package manager
+package org.schedo.manager
 
-import repository.Repository
-import repository.ScheduledTaskInstance
-import repository.TaskResult
-import task.Task
-import task.TaskInstance
-import task.TaskInstanceID
-import task.TaskName
+import org.schedo.repository.Repository
+import org.schedo.repository.ScheduledTaskInstance
+import org.schedo.repository.TaskResult
+import org.schedo.task.Task
+import org.schedo.task.TaskInstance
+import org.schedo.task.TaskInstanceID
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 import java.util.*
 import io.github.oshai.kotlinlogging.KotlinLogging

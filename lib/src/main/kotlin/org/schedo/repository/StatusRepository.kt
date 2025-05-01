@@ -1,6 +1,6 @@
-package repository
+package org.schedo.repository
 
-import task.TaskInstanceID
+import org.schedo.task.TaskInstanceID
 import java.time.Duration
 import java.time.OffsetDateTime
 

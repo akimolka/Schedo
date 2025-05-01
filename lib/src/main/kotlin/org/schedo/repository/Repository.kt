@@ -1,9 +1,9 @@
-package repository
+package org.schedo.repository
 
-import repository.postgres.PostgresStatusRepository
-import repository.postgres.PostgresTasksRepository
-import repository.ram.InMemoryStatus
-import repository.ram.InMemoryTasks
+import org.schedo.repository.postgres.PostgresStatusRepository
+import org.schedo.repository.postgres.PostgresTasksRepository
+import org.schedo.repository.ram.InMemoryStatus
+import org.schedo.repository.ram.InMemoryTasks
 import javax.sql.DataSource
 
 sealed interface RepositoryType {
@@ -13,7 +13,7 @@ sealed interface RepositoryType {
 
 class Repository(repositoryType: RepositoryType) {
     val tasksRepository: TasksRepository = when (repositoryType) {
-        is RepositoryType.InMemory -> InMemoryTasks()
+        is RepositoryType.InMemory -> org.schedo.repository.ram.InMemoryTasks()
         is RepositoryType.Postgres -> PostgresTasksRepository(repositoryType.dataSource)
     }
     val statusRepository: StatusRepository = when (repositoryType) {

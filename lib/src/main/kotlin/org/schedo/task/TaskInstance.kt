@@ -1,7 +1,7 @@
-package task
+package org.schedo.task
 
-import repository.TaskResult
-import scheduler.Scheduler
+import org.schedo.repository.TaskResult
+import org.schedo.scheduler.Scheduler
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.util.*

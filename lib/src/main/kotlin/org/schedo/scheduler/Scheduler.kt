@@ -1,4 +1,4 @@
-package scheduler
+package org.schedo.scheduler
 
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
@@ -6,10 +6,10 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
-import manager.TaskManager
-import repository.Repository
-import repository.RepositoryType
-import task.*
+import org.schedo.manager.TaskManager
+import org.schedo.repository.Repository
+import org.schedo.repository.RepositoryType
+import org.schedo.task.*
 
 private val logger = KotlinLogging.logger {}
 

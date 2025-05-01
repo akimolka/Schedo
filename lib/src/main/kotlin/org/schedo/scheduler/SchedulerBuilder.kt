@@ -1,6 +1,6 @@
-package scheduler
+package org.schedo.scheduler
 
-import repository.*
+import org.schedo.repository.*
 import java.util.concurrent.Executors
 
 class SchedulerBuilder {

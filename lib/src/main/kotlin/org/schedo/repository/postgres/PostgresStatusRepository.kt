@@ -1,9 +1,9 @@
-package repository.postgres
+package org.schedo.repository.postgres
 
-import repository.Status
-import repository.StatusRepository
-import repository.TaskResult
-import task.TaskInstanceID
+import org.schedo.repository.Status
+import org.schedo.repository.StatusRepository
+import org.schedo.repository.TaskResult
+import org.schedo.task.TaskInstanceID
 import java.time.OffsetDateTime
 import javax.sql.DataSource
 
