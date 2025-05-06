@@ -38,26 +38,28 @@ class SchedulerBuilder {
 
     fun build(): Scheduler {
         val dsType = dataSourceType  // snapshot it
-        when (dsType) {
-            null -> {}
-            is DataSourceType.Postgres -> createPostgresTables(dataSource!!)
-            is DataSourceType.Other -> TODO("${dsType.name} is not supported")
-        }
 
-        val tasksRepository: TasksRepository = when (dsType) {
-            null -> InMemoryTasks()
-            is DataSourceType.Postgres -> PostgresTasksRepository(dataSource!!)
-            is DataSourceType.Other -> TODO()
-        }
-        val statusRepository: StatusRepository = when (dsType) {
-            null -> InMemoryStatus()
-            is DataSourceType.Postgres -> PostgresStatusRepository(dataSource!!)
-            is DataSourceType.Other -> TODO()
-        }
-        val retryRepository: RetryRepository = when (dsType) {
-            null -> InMemoryRetry()
-            is DataSourceType.Postgres -> PostgresRetryRepository(dataSource!!)
-            is DataSourceType.Other -> TODO()
+        val (tasksRepository, statusRepository, retryRepository) = when (dsType) {
+            null -> {
+                val inMemTasks  = InMemoryTasks()
+                val inMemStatus = InMemoryStatus()
+                Triple<TasksRepository, StatusRepository, RetryRepository>(
+                    inMemTasks,
+                    inMemStatus,
+                    InMemoryRetry(inMemTasks, inMemStatus)
+                )
+            }
+
+            is DataSourceType.Postgres -> {
+                createPostgresTables(dataSource!!)
+                val pgTasks  = PostgresTasksRepository(dataSource!!)
+                val pgStatus = PostgresStatusRepository(dataSource!!)
+                val pgRetry  = PostgresRetryRepository(dataSource!!)
+                Triple(pgTasks, pgStatus, pgRetry)
+            }
+
+            is DataSourceType.Other ->
+                TODO("${dsType.name} is not supported")
         }
         val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 

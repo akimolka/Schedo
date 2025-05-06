@@ -34,4 +34,8 @@ class InMemoryStatus : StatusRepository {
             }
         }
     }
+
+    fun getStatus(instance: TaskInstanceID): StatusEntry? {
+        return statuses[instance]?.copy()
+    }
 }

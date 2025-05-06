@@ -30,9 +30,9 @@ fun TaskResult.toStatus(): Status = when(this) {
 }
 
 class TaskManager(
-    private val tasksRepository: TasksRepository = InMemoryTasks(),
-    private val statusRepository: StatusRepository = InMemoryStatus(),
-    private val retryRepository: RetryRepository = InMemoryRetry(),
+    private val tasksRepository: TasksRepository,
+    private val statusRepository: StatusRepository,
+    private val retryRepository: RetryRepository,
     private val taskResolver: TaskResolver = TaskResolver(),
     private val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {

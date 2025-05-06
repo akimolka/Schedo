@@ -2,13 +2,22 @@ package repository.ram
 
 import repository.RetryRepository
 import org.schedo.repository.Status
+import org.schedo.repository.inmemory.InMemoryStatus
+import org.schedo.repository.inmemory.InMemoryTasks
+import org.schedo.repository.inmemory.StatusEntry
 import org.schedo.task.TaskName
-import java.time.OffsetDateTime
 
-class InMemoryRetry: RetryRepository {
-    // TODO
+class InMemoryRetry(
+    private val tasksRepository: InMemoryTasks,
+    private val statusRepository: InMemoryStatus,
+): RetryRepository {
 
     override fun getNLast(name: TaskName, count: Int): List<Status> {
-       return emptyList()
+        val instances = tasksRepository.getTaskInstances(name)
+        return instances.mapNotNull { statusRepository.getStatus(it) }
+            .filter { it.finishedAt != null }
+            .sortedByDescending { it.finishedAt }
+            .take(count)
+            .map { it.status }
     }
 }

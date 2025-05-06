@@ -14,7 +14,7 @@ import org.schedo.util.DefaultDateTimeService
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    val taskManager: TaskManager = TaskManager(),
+    val taskManager: TaskManager,
     private val executor: ExecutorService = Executors.newCachedThreadPool(),
     val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
