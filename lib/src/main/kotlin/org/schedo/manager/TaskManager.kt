@@ -34,7 +34,7 @@ class TaskManager(
     private val statusRepository: StatusRepository,
     private val retryRepository: RetryRepository,
     private val taskResolver: TaskResolver = TaskResolver(),
-    private val dateTimeService: DateTimeService = DefaultDateTimeService(),
+    val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
 
     fun pickDueNow(): List<TaskInstance> =
@@ -72,12 +72,6 @@ class TaskManager(
         schedule(task.name, moment)
     }
 
-    fun retry(taskName: TaskName, retryPolicy: RetryPolicy) {
-        // TODO Task{ onFailed(context) } в context передавать количество failed
-        val failedCount = retryRepository.getFailedCount(taskName, retryPolicy.maxRetries)
-        val delay = retryPolicy.getNextDelay(failedCount)
-        if (delay != null) {
-            schedule(taskName, dateTimeService.now() + delay)
-        }
-    }
+    fun failedCount(taskName: TaskName, limit: Int) =
+        if (limit > 0) retryRepository.getFailedCount(taskName, limit) else 0
 }
