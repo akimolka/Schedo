@@ -72,6 +72,8 @@ class TaskManager(
         schedule(task.name, moment)
     }
 
+    // TODO write documentation
+    // TODO uint
     fun failedCount(taskName: TaskName, limit: Int) =
-        if (limit > 0) retryRepository.getFailedCount(taskName, limit) else 0
+        retryRepository.getFailedCount(taskName, limit)
 }

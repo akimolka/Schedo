@@ -34,12 +34,13 @@ abstract class Task(
     /**
      * Called if task execution throws an exception
      */
-    fun onFailed(context: OnFailedContext) {
+    fun onFailed(e: Exception, taskManager: TaskManager) {
         if (retryPolicy != null) {
-            val delay = retryPolicy.getNextDelay(context.failedCount)
+            val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
+            val delay = retryPolicy.getNextDelay(failedCount)
             if (delay != null) {
-                val now = context.taskManager.dateTimeService.now()
-                context.taskManager.schedule(name, now + delay)
+                val now = taskManager.dateTimeService.now()
+                taskManager.schedule(name, now + delay)
             }
         }
     }
@@ -56,8 +57,9 @@ abstract class Task(
         onCompleted(scheduler)
         scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        val failedCount = scheduler.taskManager.failedCount(name, retryPolicy?.maxRetries ?: 0)
-        onFailed(OnFailedContext(e, failedCount, scheduler.taskManager))
+        //val failedCount = scheduler.taskManager.failedCount(name, retryPolicy?.maxRetries ?: 0)
+        //onFailed(OnFailedContext(e, failedCount, scheduler.taskManager))
+        onFailed(e, scheduler.taskManager)
         scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }
