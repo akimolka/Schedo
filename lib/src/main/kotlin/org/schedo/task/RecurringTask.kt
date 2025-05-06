@@ -28,3 +28,21 @@ abstract class RecurringCronTask(
         taskManager.schedule(name, next)
     }
 }
+
+
+//abstract class RecurringTask(
+//    name: TaskName,
+//    schedule: Schedule,
+//    retryPolicy: RetryPolicy? = null,
+//) : Task(name, retryPolicy) {
+//    override fun onCompleted(scheduler: Scheduler) {
+//        val moment = scheduler.dateTimeService.now().plus(period)
+//        scheduler.taskManager.schedule(name, moment)
+//    }
+//}
+//
+//interface Schedule {
+//    fun nextExecution(moment: OffsetDateTime)
+//}
+//
+//struct FixedDelaySchedule(delay): Schedule
