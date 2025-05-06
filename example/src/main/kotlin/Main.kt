@@ -1,11 +1,39 @@
 import org.postgresql.ds.PGPoolingDataSource
-import org.postgresql.ds.PGSimpleDataSource
 import org.schedo.retry.RetryPolicy
+import org.schedo.scheduler.Scheduler
 import org.schedo.scheduler.SchedulerBuilder
-import java.sql.DriverManager
 import java.time.Duration
-import javax.sql.ConnectionPoolDataSource
-import javax.sql.DataSource
+
+fun basicExample(scheduler: Scheduler) {
+    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
+        println("Hello one-time world")
+    }
+    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
+        println("Hello recurring world")
+    }
+    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
+        Thread.sleep(10 * 1000)
+        println("Looong task finally completed")
+    }
+
+    scheduler.start()
+    Thread.sleep(10 * 1000)
+    scheduler.stop()
+}
+
+fun retryExample(scheduler: Scheduler) {
+    // Default exponential backoff is +2s, +4s, +8s, ... (max 3 retry)
+    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0), RetryPolicy.ExpBackoff()) {
+        println("Hello one-time world")
+        throw RuntimeException("Ooops")
+    }
+
+    scheduler.start()
+    Thread.sleep(20 * 1000)
+    scheduler.stop()
+    // Expected behaviour: Hello one-time world will be written 4 times
+    // At moments: right after star, in 2s, in (2+4)s, in (2+4+8)s
+}
 
 fun main() {
     val source: PGPoolingDataSource = PGPoolingDataSource()
@@ -21,24 +49,12 @@ fun main() {
     val scheduler = SchedulerBuilder()
        // .dataSource(source)
         .build()
-//    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
-//        println("Hello one-time world")
-//    }
-//    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
-//        println("Hello recurring world")
-//    }
-//    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
-//        Thread.sleep(10 * 1000)
-//        println("Looong task finally completed")
-//    }
 
-    // Default exponential backoff is +2s, +4s, +8s, ... (max 3 retry)
-    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0), RetryPolicy.ExpBackoff()) {
-        println("Hello one-time world")
-        throw RuntimeException("Ooops")
+    scheduler.scheduleRecurringCron("CronRecurring", "*/2 * * * * ?"){
+        println("Hello cron world")
     }
 
     scheduler.start()
-    Thread.sleep(20 * 1000)
+    Thread.sleep(10 * 1000)
     scheduler.stop()
 }
