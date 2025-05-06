@@ -72,8 +72,13 @@ class TaskManager(
         schedule(task.name, moment)
     }
 
-    // TODO write documentation
-    // TODO uint
-    fun failedCount(taskName: TaskName, limit: Int) =
+    /**
+     * Returns a number of fails after last success.
+     * Note that setting [limit] to zero will result in zero return value,
+     * but will not prevent a database query.
+     * @param limit limits the number of fails. In other words,
+     * minimum of limit and number of fails after last success is returned.
+     */
+    fun failedCount(taskName: TaskName, limit: UInt) =
         retryRepository.getFailedCount(taskName, limit)
 }

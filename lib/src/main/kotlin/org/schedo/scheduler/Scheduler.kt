@@ -25,7 +25,7 @@ class Scheduler(
     private fun run() {
         while (!stopFlag) {
             taskManager.pickDueNow().forEach { (instanceID, task) ->
-                executor.submit { task.exec(instanceID, this) }
+                executor.submit { task.exec(instanceID, this.taskManager) }
             }
             Thread.yield()
         }

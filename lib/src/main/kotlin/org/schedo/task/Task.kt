@@ -12,7 +12,7 @@ import kotlin.system.measureTimeMillis
 value class TaskName(val value: String)
 
 /**
- * General description of the task without reference to its execution time.
+ * General description of a task without reference to its execution time.
  * Contains name, payload and handlers.
  * Each time a task is scheduled, its instance is created,
  * namely a unique TaskInstanceID is generated.
@@ -29,7 +29,7 @@ abstract class Task(
     /**
      * Called if task execution is successful
      */
-    abstract fun onCompleted(scheduler: Scheduler)
+    abstract fun onCompleted(taskManager: TaskManager)
 
     /**
      * Called if task execution throws an exception
@@ -49,18 +49,16 @@ abstract class Task(
         taskManager.updateTaskStatusEnqueued(id)
     }
 
-    fun exec(id: TaskInstanceID, scheduler: Scheduler) = try {
-        scheduler.taskManager.updateTaskStatusStarted(id)
+    fun exec(id: TaskInstanceID, taskManager: TaskManager) = try {
+        taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {
             run()
         }
-        onCompleted(scheduler)
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        onCompleted(taskManager)
+        taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        //val failedCount = scheduler.taskManager.failedCount(name, retryPolicy?.maxRetries ?: 0)
-        //onFailed(OnFailedContext(e, failedCount, scheduler.taskManager))
-        onFailed(e, scheduler.taskManager)
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
+        onFailed(e, taskManager)
+        taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }
 

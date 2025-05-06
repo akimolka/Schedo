@@ -12,12 +12,12 @@ class InMemoryRetry(
     private val statusRepository: InMemoryStatus,
 ): RetryRepository {
 
-    override fun getNLast(name: TaskName, count: Int): List<Status> {
+    override fun getNLast(name: TaskName, count: UInt): List<Status> {
         val instances = tasksRepository.getTaskInstances(name)
         return instances.mapNotNull { statusRepository.getStatus(it) }
             .filter { it.finishedAt != null }
             .sortedByDescending { it.finishedAt }
-            .take(count)
+            .take(count.toInt())
             .map { it.status }
     }
 }

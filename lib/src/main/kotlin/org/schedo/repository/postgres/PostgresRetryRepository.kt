@@ -24,11 +24,11 @@ class PostgresRetryRepository (
             LIMIT ?
         """.trimIndent()
 
-    override fun getNLast(name: TaskName, count: Int): List<Status> {
+    override fun getNLast(name: TaskName, count: UInt): List<Status> {
         return dataSource.connection.use { conn ->
             conn.prepareStatement(lastNFinishedQuery).use { ps ->
                 ps.setString(1, name.value)
-                ps.setInt(2, count)
+                ps.setInt(2, count.toInt())
                 ps.executeQuery().use { rs ->
                     val result = mutableListOf<Status>()
                     while (rs.next()) {

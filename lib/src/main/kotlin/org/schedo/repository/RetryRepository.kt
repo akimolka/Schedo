@@ -5,11 +5,15 @@ import java.time.OffsetDateTime
 import org.schedo.task.TaskName
 
 interface RetryRepository {
-    fun getFailedCount(name: TaskName, limit: Int): Int {
+    fun getFailedCount(name: TaskName, limit: UInt): UInt {
         val statuses = getNLast(name, limit)
-        val indx = statuses.indexOfFirst{ it != Status.FAILED}
-        return if (indx != -1) indx else statuses.size
+        val idx = statuses.indexOfFirst{ it != Status.FAILED}
+        return if (idx >= 0) {
+            idx.toUInt()
+        } else {
+            minOf(statuses.size.toUInt(), limit)
+        }
     }
 
-    fun getNLast(name: TaskName, count: Int): List<Status>
+    fun getNLast(name: TaskName, count: UInt): List<Status>
 }
