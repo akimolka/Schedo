@@ -1,14 +1,34 @@
-import scheduler.Scheduler
+import org.postgresql.ds.PGPoolingDataSource
+import org.postgresql.ds.PGSimpleDataSource
+import org.schedo.scheduler.SchedulerBuilder
+import java.sql.DriverManager
 import java.time.Duration
-
+import javax.sql.ConnectionPoolDataSource
+import javax.sql.DataSource
 
 fun main() {
-    val scheduler = Scheduler()
-    scheduler.scheduleAfter(Duration.ofSeconds(5)){
+    val source: PGPoolingDataSource = PGPoolingDataSource()
+        .apply {
+            dataSourceName = "A Data Source"
+            serverName = "localhost:15432"
+            databaseName = "app_db"
+            user = "app_db"
+            password = "app_password"
+            maxConnections = 10
+        }
+
+    val scheduler = SchedulerBuilder()
+        //.dataSource(source)
+        .build()
+    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
         println("Hello one-time world")
     }
-    scheduler.scheduleRecurring(Duration.ofSeconds(1)){
+    scheduler.scheduleRecurring("recurring", Duration.ofSeconds(1)) {
         println("Hello recurring world")
+    }
+    scheduler.scheduleAfter("looong", Duration.ofSeconds(0)) {
+        Thread.sleep(10 * 1000)
+        println("Looong task finally completed")
     }
 
 
