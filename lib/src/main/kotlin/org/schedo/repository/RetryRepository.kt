@@ -5,8 +5,6 @@ import java.time.OffsetDateTime
 import org.schedo.task.TaskName
 
 interface RetryRepository {
-    fun getLastFail(name: TaskName): OffsetDateTime?
-
     fun getFailedCount(name: TaskName, limit: Int): Int {
         val statuses = getNLast(name, limit)
         val indx = statuses.indexOfFirst{ it != Status.FAILED}

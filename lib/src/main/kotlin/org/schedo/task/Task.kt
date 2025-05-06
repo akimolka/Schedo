@@ -49,12 +49,9 @@ abstract class Task(
         val timeSpending = measureTimeMillis {
             run()
         }
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
         onCompleted(scheduler)
+        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        // Порядок важен: OnFailed смотрит на последний Fail в таблице,
-        // а updateTaskStatusFinish добавляет текущую задачу со статусом Fail в таблицу
-        // Если сделать наоборот, то мы найдём себя же
         onFailed(e, scheduler)
         scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }

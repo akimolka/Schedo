@@ -1,27 +1,26 @@
 package org.schedo.retry
 
 import java.time.Duration
-import java.time.OffsetDateTime
+import kotlin.math.pow
 
+/**
+ * @param maxRetries limits the number of retries after the first execution. So that
+ * [maxRetries] = 0 results in no retries at all, it is equivalent to retryPolicy = null.
+ */
 sealed class RetryPolicy(val maxRetries: Int) {
     class FixedDelay(maxRetries: Int = 3, val delay: Duration = Duration.ofSeconds(10)) : RetryPolicy(maxRetries) {
-        override fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime): OffsetDateTime =
-            currFail + delay
+        override fun getNextDelay(failedCount: Int): Duration? =
+            if (failedCount >= maxRetries) null else delay
     }
 
-    // TODO calculate using firstDelay * multiplier^count
     class ExpBackoff(maxRetries: Int = 3, val firstDelay: Duration = Duration.ofSeconds(2), val multiplier: Double = 2.0) : RetryPolicy(maxRetries) {
-        override fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime): OffsetDateTime =
-            if (prevFail == null) {
-                currFail + firstDelay
-            } else {
-                val lastInterval = Duration.between(prevFail, currFail)
-                val nextDelay = Duration.ofMillis(
-                    (lastInterval.toMillis() * multiplier).toLong()
-                )
-                currFail + nextDelay
-            }
+        override fun getNextDelay(failedCount: Int): Duration? =
+            if (failedCount >= maxRetries) null
+            else Duration.ofMillis((firstDelay.toMillis() * multiplier.pow(failedCount)).toLong())
     }
 
-    abstract fun getNextRetryTime(prevFail: OffsetDateTime?, currFail: OffsetDateTime): OffsetDateTime
+    /**
+     * @param failedCount the number of falls excluding current fall
+     */
+    abstract fun getNextDelay(failedCount: Int): Duration?
 }

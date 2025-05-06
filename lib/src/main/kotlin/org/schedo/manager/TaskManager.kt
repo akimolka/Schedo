@@ -73,12 +73,11 @@ class TaskManager(
     }
 
     fun retry(taskName: TaskName, retryPolicy: RetryPolicy) {
-        // Task{ onFailed(context) } в context передавать количество failed
+        // TODO Task{ onFailed(context) } в context передавать количество failed
         val failedCount = retryRepository.getFailedCount(taskName, retryPolicy.maxRetries)
-        if (failedCount < retryPolicy.maxRetries) {
-            val lastFailed = retryRepository.getLastFail(taskName)
-            val nextRetryTime = retryPolicy.getNextRetryTime(lastFailed, dateTimeService.now())
-            schedule(taskName, nextRetryTime)
+        val delay = retryPolicy.getNextDelay(failedCount)
+        if (delay != null) {
+            schedule(taskName, dateTimeService.now() + delay)
         }
     }
 }

@@ -5,9 +5,7 @@ import org.schedo.retry.RetryPolicy
 
 abstract class OneTimeTask (
     name: TaskName,
-    retryPolicy: RetryPolicy = RetryPolicy.ExpBackoff(),
+    retryPolicy: RetryPolicy? = null,
 ) : Task(name, retryPolicy) {
     override fun onCompleted(scheduler: Scheduler) {}
-
-    //override fun onFailed(e: Exception, scheduler: Scheduler) {}
 }

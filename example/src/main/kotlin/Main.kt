@@ -1,5 +1,6 @@
 import org.postgresql.ds.PGPoolingDataSource
 import org.postgresql.ds.PGSimpleDataSource
+import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.SchedulerBuilder
 import java.sql.DriverManager
 import java.time.Duration
@@ -12,13 +13,13 @@ fun main() {
             dataSourceName = "A Data Source"
             serverName = "localhost:15432"
             databaseName = "app_db"
-            user = "app_db"
+            user = "app_user"
             password = "app_password"
             maxConnections = 10
         }
 
     val scheduler = SchedulerBuilder()
-        //.dataSource(source)
+        .dataSource(source)
         .build()
 //    scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
 //        println("Hello one-time world")
@@ -32,7 +33,7 @@ fun main() {
 //    }
 
     // Default exponential backoff is +2s, +4s, +8s, ... (max 3 retry)
-    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0)) {
+    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0), RetryPolicy.ExpBackoff()) {
         println("Hello one-time world")
         throw RuntimeException("Ooops")
     }

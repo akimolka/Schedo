@@ -6,6 +6,7 @@ import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.manager.TaskManager
+import org.schedo.retry.RetryPolicy
 import org.schedo.task.*
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
@@ -30,8 +31,11 @@ class Scheduler(
         }
     }
 
-    fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) {
-        taskManager.schedule(object : OneTimeTask(TaskName(name)) {
+    fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) =
+        scheduleAfter(name, duration, null, func)
+
+    fun scheduleAfter(name: String, duration: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) {
+        taskManager.schedule(object : OneTimeTask(TaskName(name), retryPolicy) {
             override fun run() {
                 func()
             }
@@ -39,8 +43,11 @@ class Scheduler(
 
     }
 
-    fun scheduleRecurring(name: String, period: TemporalAmount, func: () -> Unit) {
-        taskManager.schedule(object : RecurringTask(TaskName(name), period) {
+    fun scheduleRecurring(name: String, duration: TemporalAmount, func: () -> Unit) =
+        scheduleRecurring(name, duration, null, func)
+
+    fun scheduleRecurring(name: String, period: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) {
+        taskManager.schedule(object : RecurringTask(TaskName(name), period, retryPolicy) {
             override fun run() {
                 func()
             }
