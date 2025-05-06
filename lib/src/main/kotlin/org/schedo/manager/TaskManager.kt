@@ -10,8 +10,11 @@ import java.util.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.*
+import org.schedo.retry.RetryPolicy
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
+import repository.RetryRepository
+import repository.ram.InMemoryRetry
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
@@ -29,6 +32,7 @@ fun TaskResult.toStatus(): Status = when(this) {
 class TaskManager(
     private val tasksRepository: TasksRepository = InMemoryTasks(),
     private val statusRepository: StatusRepository = InMemoryStatus(),
+    private val retryRepository: RetryRepository = InMemoryRetry(),
     private val taskResolver: TaskResolver = TaskResolver(),
     private val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
@@ -66,5 +70,15 @@ class TaskManager(
     fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
         schedule(task.name, moment)
+    }
+
+    fun retry(taskName: TaskName, retryPolicy: RetryPolicy) {
+        // Task{ onFailed(context) } в context передавать количество failed
+        val failedCount = retryRepository.getFailedCount(taskName, retryPolicy.maxRetries)
+        if (failedCount < retryPolicy.maxRetries) {
+            val lastFailed = retryRepository.getLastFail(taskName)
+            val nextRetryTime = retryPolicy.getNextRetryTime(lastFailed, dateTimeService.now())
+            schedule(taskName, nextRetryTime)
+        }
     }
 }

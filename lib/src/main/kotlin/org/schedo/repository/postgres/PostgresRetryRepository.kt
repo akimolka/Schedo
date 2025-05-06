@@ -1,12 +1,9 @@
 package repository.postgres
 
 import repository.RetryRepository
-import repository.Status
-import task.TaskInstanceFullName
-import task.TaskInstanceID
-import task.TaskName
+import org.schedo.repository.Status
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
-import java.util.*
 import javax.sql.DataSource
 
 class PostgresRetryRepository (

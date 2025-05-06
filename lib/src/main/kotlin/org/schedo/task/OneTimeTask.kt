@@ -1,7 +1,7 @@
 package org.schedo.task
 
 import org.schedo.scheduler.Scheduler
-import retry.RetryPolicy
+import org.schedo.retry.RetryPolicy
 
 abstract class OneTimeTask (
     name: TaskName,

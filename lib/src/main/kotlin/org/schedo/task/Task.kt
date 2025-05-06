@@ -2,6 +2,7 @@ package org.schedo.task
 
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResult
+import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import java.time.Duration
 import java.util.*
@@ -18,6 +19,7 @@ value class TaskName(val value: String)
  */
 abstract class Task(
     val name: TaskName,
+    val retryPolicy: RetryPolicy? = null,
 ) {
     /**
      * Payload
@@ -32,7 +34,11 @@ abstract class Task(
     /**
      * Called if task execution throws an exception
      */
-    abstract fun onFailed(e: Exception, scheduler: Scheduler)
+    fun onFailed(e: Exception, scheduler: Scheduler) {
+        if (retryPolicy != null) {
+            scheduler.taskManager.retry(name, retryPolicy)
+        }
+    }
 
     fun whenEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
         taskManager.updateTaskStatusEnqueued(id)
@@ -46,8 +52,11 @@ abstract class Task(
         scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
         onCompleted(scheduler)
     } catch (e: Exception) {
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
+        // Порядок важен: OnFailed смотрит на последний Fail в таблице,
+        // а updateTaskStatusFinish добавляет текущую задачу со статусом Fail в таблицу
+        // Если сделать наоборот, то мы найдём себя же
         onFailed(e, scheduler)
+        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }
 

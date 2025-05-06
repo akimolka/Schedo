@@ -7,6 +7,9 @@ import org.schedo.repository.inmemory.InMemoryTasks
 import org.schedo.repository.postgres.PostgresStatusRepository
 import org.schedo.repository.postgres.PostgresTasksRepository
 import org.schedo.repository.postgres.createPostgresTables
+import repository.RetryRepository
+import repository.postgres.PostgresRetryRepository
+import repository.ram.InMemoryRetry
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.sql.DataSource
@@ -51,7 +54,12 @@ class SchedulerBuilder {
             is DataSourceType.Postgres -> PostgresStatusRepository(dataSource!!)
             is DataSourceType.Other -> TODO()
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository)
+        val retryRepository: RetryRepository = when (dsType) {
+            null -> InMemoryRetry()
+            is DataSourceType.Postgres -> PostgresRetryRepository(dataSource!!)
+            is DataSourceType.Other -> TODO()
+        }
+        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
         return Scheduler(taskManager, executor)
     }

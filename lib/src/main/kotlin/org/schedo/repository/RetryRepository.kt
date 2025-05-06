@@ -1,7 +1,8 @@
 package repository
 
+import org.schedo.repository.Status
 import java.time.OffsetDateTime
-import task.TaskName
+import org.schedo.task.TaskName
 
 interface RetryRepository {
     fun getLastFail(name: TaskName): OffsetDateTime?

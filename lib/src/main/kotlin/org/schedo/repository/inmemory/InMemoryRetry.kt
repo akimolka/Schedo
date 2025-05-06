@@ -1,8 +1,8 @@
 package repository.ram
 
 import repository.RetryRepository
-import repository.Status
-import task.TaskName
+import org.schedo.repository.Status
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 
 class InMemoryRetry: RetryRepository {
