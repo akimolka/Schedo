@@ -22,12 +22,13 @@ private fun createTasksTable(dataSource: DataSource) {
 private fun createStatusTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoStatus (
-                id VARCHAR(255) references SchedoTasks(id),
+                id VARCHAR(255) PRIMARY KEY,
                 status VARCHAR(20),
                 scheduledAt TIMESTAMP WITH TIME ZONE NOT NULL,
                 enqueuedAt TIMESTAMP WITH TIME ZONE NULL,
                 startedAt TIMESTAMP WITH TIME ZONE NULL,
-                finishedAt TIMESTAMP WITH TIME ZONE NULL
+                finishedAt TIMESTAMP WITH TIME ZONE NULL,
+                FOREIGN KEY(id) REFERENCES SchedoTasks(id)
             )
         """.trimIndent()
 
