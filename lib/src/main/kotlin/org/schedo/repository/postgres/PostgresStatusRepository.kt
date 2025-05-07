@@ -14,11 +14,12 @@ class PostgresStatusRepository (
         val insertSQL = """
             INSERT INTO SchedoStatus (id, status, scheduledAt)
             VALUES(?, ?, ?)
+            ON CONFLICT (id) DO NOTHING
         """.trimIndent()
 
         dataSource.connection.use { connection ->
             connection.prepareStatement(insertSQL).use { pstmt ->
-                pstmt.setObject(1, instance.value)
+                pstmt.setString(1, instance.value)
                 pstmt.setString(2, Status.SCHEDULED.name)
                 pstmt.setObject(3, moment)
                 pstmt.executeUpdate()
@@ -45,7 +46,7 @@ class PostgresStatusRepository (
             conn.prepareStatement(updateSQL).use { pstmt ->
                 pstmt.setString(1, status.name)
                 pstmt.setObject(2, moment)
-                pstmt.setObject(3, instance.value)
+                pstmt.setString(3, instance.value)
                 pstmt.executeUpdate()
             }
         }

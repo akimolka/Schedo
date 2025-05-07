@@ -57,16 +57,31 @@ class TaskManager(
         }
     }
 
-    fun schedule(taskName: TaskName, moment: OffsetDateTime) {
-        val taskInstanceID = TaskInstanceID(UUID.randomUUID())
+    /**
+     * Schedules task with [taskName] to execute at [moment].
+     * Must be called for task rescheduling either after a fall
+     * or for the second and subsequent runs of a recurring task.
+     * The first scheduling of a task must be done via the overload that accepts [Task].
+     * @param taskInstanceID specifies id for this run. Do not set it manually unless you know what you are doing.
+     * The default value is a random UUID. [taskInstanceID] of the first run of a task is equal to the task's name.
+     */
+    fun schedule(
+        taskName: TaskName, moment: OffsetDateTime,
+        taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
         logger.info{"schedule taskInstance $taskInstanceID of task $taskName to execute at $moment"}
         tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
         statusRepository.schedule(taskInstanceID, moment)
     }
 
+    /**
+     * Schedules [task] to execute at [moment].
+     * Must be called when and only when the task is scheduled for the first time.
+     * Subsequent reschedules must use the overload which accepts [TaskName].
+     */
     fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
-        schedule(task.name, moment)
+        val firstInstanceID = TaskInstanceID(task.name.value)
+        schedule(task.name, moment, firstInstanceID)
     }
 
     /**

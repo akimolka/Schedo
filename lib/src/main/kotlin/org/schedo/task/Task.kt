@@ -65,7 +65,7 @@ abstract class Task(
  * TaskInstanceID is unique among TaskInstanceIDs of all instances of all tasks
  */
 @JvmInline
-value class TaskInstanceID(val value: UUID)
+value class TaskInstanceID(val value: String)
 
 data class TaskInstanceName(val id: TaskInstanceID, val name: TaskName)
 
