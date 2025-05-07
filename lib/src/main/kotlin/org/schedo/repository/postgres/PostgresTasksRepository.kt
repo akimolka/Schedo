@@ -14,14 +14,14 @@ class PostgresTasksRepository(
     private val dataSource: DataSource
 ) : TasksRepository {
 
-    override fun add(instance: ScheduledTaskInstance) {
+    override fun add(instance: ScheduledTaskInstance): Boolean {
         val insertSQL = """
             INSERT INTO SchedoTasks (id, name, time)
             VALUES (?, ?, ?)
             ON CONFLICT (id) DO NOTHING
         """.trimIndent()
 
-        dataSource.connection.use { connection ->
+        val rowsInserted = dataSource.connection.use { connection ->
             connection.prepareStatement(insertSQL).use { pstmt ->
                 pstmt.setString(1, instance.id.value)
                 pstmt.setString(2, instance.name.value)
@@ -29,6 +29,8 @@ class PostgresTasksRepository(
                 pstmt.executeUpdate()
             }
         }
+
+        return rowsInserted > 0
     }
 
     override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName> {

@@ -68,9 +68,13 @@ class TaskManager(
     fun schedule(
         taskName: TaskName, moment: OffsetDateTime,
         taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
-        logger.info{"schedule taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-        tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
-        statusRepository.schedule(taskInstanceID, moment)
+        val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
+        if (added) {
+            logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
+            statusRepository.schedule(taskInstanceID, moment)
+        } else {
+            logger.warn{"Did not add to the repository: taskInstance $taskInstanceID of task $taskName"}
+        }
     }
 
     /**

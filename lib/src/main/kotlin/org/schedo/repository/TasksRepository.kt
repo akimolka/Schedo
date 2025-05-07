@@ -8,6 +8,10 @@ import java.time.OffsetDateTime
 data class ScheduledTaskInstance(val id: TaskInstanceID, val name: TaskName, val executionTime: OffsetDateTime)
 
 interface TasksRepository {
-    fun add(instance: ScheduledTaskInstance)
+    /**
+     * Adds the given instance to the repository of scheduled tasks.
+     * @return Whether the instance was added.
+     */
+    fun add(instance: ScheduledTaskInstance): Boolean
     fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName>
 }
