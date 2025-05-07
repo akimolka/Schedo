@@ -9,12 +9,9 @@ import java.time.OffsetDateTime
 import java.util.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.repository.*
-import org.schedo.repository.inmemory.*
-import org.schedo.retry.RetryPolicy
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
 import repository.RetryRepository
-import repository.ram.InMemoryRetry
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}

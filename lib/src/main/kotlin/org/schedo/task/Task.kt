@@ -3,7 +3,6 @@ package org.schedo.task
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResult
 import org.schedo.retry.RetryPolicy
-import org.schedo.scheduler.Scheduler
 import java.time.Duration
 import java.util.*
 import kotlin.system.measureTimeMillis

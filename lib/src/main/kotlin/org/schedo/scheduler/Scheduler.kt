@@ -63,27 +63,45 @@ class Scheduler(
     fun scheduleAfter(name: String, duration: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) =
         scheduleAt(name, dateTimeService.now().plus(duration), retryPolicy, func)
 
-    fun scheduleRecurring(name: String, duration: TemporalAmount, func: () -> Unit) =
-        scheduleRecurring(name, duration, null, func)
+    /**
+     * Schedule recurring task [name] that repeats once in [period] without retry strategy.
+     */
+    fun scheduleRecurring(name: String, period: TemporalAmount, func: () -> Unit) =
+        scheduleRecurring(name, period, null, func)
 
+    /**
+     * Schedule recurring task [name] that repeats once in [period] with [retryPolicy] strategy.
+     */
     fun scheduleRecurring(name: String, period: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) {
-        taskManager.schedule(object : RecurringTask(TaskName(name), period, retryPolicy) {
-            override fun run() = func()
-        }, dateTimeService.now() + period)
+        val recurringSchedule = FixedDelaySchedule(period)
+        scheduleRecurring(name, recurringSchedule, retryPolicy, func)
     }
 
-    fun scheduleRecurringCron(name: String, cron: String, func: () -> Unit) =
-        scheduleRecurringCron(name, cron, null, func)
+    /**
+     * Schedule recurring task [name] that is executed at moments described by [cron] expression.
+     */
+    fun scheduleRecurring(name: String, cron: String, func: () -> Unit) =
+        scheduleRecurring(name, cron, null, func)
 
-    fun scheduleRecurringCron(name: String, cronExpr: String, retryPolicy: RetryPolicy?, func: () -> Unit) {
+    /**
+     * Schedule recurring task [name] that is executed at moments described by [cron] expression
+     * with [retryPolicy] strategy.
+     */
+    fun scheduleRecurring(name: String, cronExpr: String, retryPolicy: RetryPolicy?, func: () -> Unit) {
         val cron = cronParser.parse(cronExpr)
         logger.info { "Task $name with schedule ${cronDescriptor.describe(cron)} has been scheduled" }
-        val executionTime = ExecutionTime.forCron(cron)
-        val next = nextExecution(executionTime, dateTimeService.now())
-        taskManager.schedule(object : RecurringCronTask(TaskName(name), executionTime, retryPolicy) {
-            override fun run() = func()
-        }, next)
+        val recurringSchedule = CronSchedule(ExecutionTime.forCron(cron))
+        scheduleRecurring(name, recurringSchedule, retryPolicy, func)
     }
+
+    /**
+     * Schedule recurring task [name] that runs with [recurringSchedule] and [retryPolicy].
+     */
+    private fun scheduleRecurring(name: String, recurringSchedule: RecurringSchedule,
+                                  retryPolicy: RetryPolicy?, func: () -> Unit) =
+        taskManager.schedule(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
+            override fun run() = func()
+        }, recurringSchedule.nextExecution(dateTimeService.now()))
 
     fun start() {
         logger.info{ "Scheduler started" }

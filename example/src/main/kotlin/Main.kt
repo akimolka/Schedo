@@ -50,7 +50,7 @@ fun main() {
        // .dataSource(source)
         .build()
 
-    scheduler.scheduleRecurringCron("CronRecurring", "*/2 * * * * ?"){
+    scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
         println("Hello cron world")
     }
 
