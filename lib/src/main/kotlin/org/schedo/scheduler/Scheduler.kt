@@ -18,6 +18,7 @@ import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.time.ExecutionTime
+import org.schedo.controller.TaskController
 import org.schedo.waiter.Waiter
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
@@ -26,6 +27,7 @@ private val logger = KotlinLogging.logger {}
 
 class Scheduler(
     private val taskManager: TaskManager,
+    private val taskController: TaskController,
     private val waiter: Waiter,
     private val executor: ExecutorService = Executors.newCachedThreadPool(),
     private val dateTimeService: DateTimeService = DefaultDateTimeService(),
@@ -122,6 +124,7 @@ class Scheduler(
 
     fun start() {
         logger.info{ "Scheduler started" }
+        taskController.run()
         thread {
             run()
         }

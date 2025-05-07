@@ -1,5 +1,6 @@
 package org.schedo.scheduler
 
+import org.schedo.controller.TaskController
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.manager.TaskManager
 import org.schedo.repository.*
@@ -93,6 +94,6 @@ class SchedulerBuilder {
                 "\tdataSourceType: $dataSourceType\n" +
                 "\texecutionThreadsCount: $executionThreadsCount"}
 
-        return Scheduler(taskManager, waiter, executor)
+        return Scheduler(taskManager, TaskController(), waiter, executor)
     }
 }
