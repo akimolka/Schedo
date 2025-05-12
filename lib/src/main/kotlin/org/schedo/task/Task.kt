@@ -19,7 +19,7 @@ value class TaskName(val value: String)
  */
 abstract class Task(
     val name: TaskName,
-    val retryPolicy: RetryPolicy? = null,
+    private val retryPolicy: RetryPolicy? = null,
 ) {
     /**
      * Payload
@@ -29,12 +29,12 @@ abstract class Task(
     /**
      * Called if task execution is successful
      */
-    abstract fun onCompleted(taskManager: TaskManager)
+    protected abstract fun onCompleted(taskManager: TaskManager)
 
     /**
      * Called if task execution throws an exception
      */
-    fun onFailed(e: Exception, taskManager: TaskManager) {
+    protected fun onFailed(e: Exception, taskManager: TaskManager) {
         if (retryPolicy != null) {
             val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
             val delay = retryPolicy.getNextDelay(failedCount)
@@ -45,7 +45,7 @@ abstract class Task(
         }
     }
 
-    fun whenEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
+    fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
         taskManager.updateTaskStatusEnqueued(id)
     }
 

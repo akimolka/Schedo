@@ -39,27 +39,30 @@ class SchedulerBuilder {
     fun build(): Scheduler {
         val dsType = dataSourceType  // snapshot it
 
-        val (tasksRepository, statusRepository, retryRepository) = when (dsType) {
+        val tasksRepository: TasksRepository
+        val statusRepository: StatusRepository
+        val retryRepository: RetryRepository
+
+        when (dsType) {
             null -> {
                 val inMemTasks  = InMemoryTasks()
                 val inMemStatus = InMemoryStatus()
-                Triple<TasksRepository, StatusRepository, RetryRepository>(
-                    inMemTasks,
-                    inMemStatus,
-                    InMemoryRetry(inMemTasks, inMemStatus)
-                )
+                tasksRepository = inMemTasks
+                statusRepository = inMemStatus
+                retryRepository = InMemoryRetry(inMemTasks, inMemStatus)
             }
 
             is DataSourceType.Postgres -> {
-                createPostgresTables(dataSource!!)
-                val pgTasks  = PostgresTasksRepository(dataSource!!)
-                val pgStatus = PostgresStatusRepository(dataSource!!)
-                val pgRetry  = PostgresRetryRepository(dataSource!!)
-                Triple(pgTasks, pgStatus, pgRetry)
+                val pgDataSource = checkNotNull(dataSource) { "Postgres data source is not set" }
+
+                createPostgresTables(pgDataSource)
+                tasksRepository = PostgresTasksRepository(pgDataSource)
+                statusRepository = PostgresStatusRepository(pgDataSource)
+                retryRepository = PostgresRetryRepository(pgDataSource)
             }
 
             is DataSourceType.Other ->
-                TODO("${dsType.name} is not supported")
+                error("${dsType.name} is not supported")
         }
         val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 

@@ -40,7 +40,7 @@ class TaskManager(
     fun pickDueNow(): List<TaskInstance> =
         tasksRepository.pickTaskInstancesDue(dateTimeService.now())
             .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
-                it.whenEnqueued(id, this)
+                it.onEnqueued(id, this)
                 TaskInstance(id, it)
             } }
 
