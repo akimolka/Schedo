@@ -2,6 +2,7 @@ package org.schedo.task
 
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResult
+import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import java.time.Duration
 import java.util.*
@@ -11,13 +12,14 @@ import kotlin.system.measureTimeMillis
 value class TaskName(val value: String)
 
 /**
- * General description of the task without reference to its execution time.
+ * General description of a task without reference to its execution time.
  * Contains name, payload and handlers.
  * Each time a task is scheduled, its instance is created,
  * namely a unique TaskInstanceID is generated.
  */
 abstract class Task(
     val name: TaskName,
+    private val retryPolicy: RetryPolicy? = null,
 ) {
     /**
      * Payload
@@ -27,27 +29,36 @@ abstract class Task(
     /**
      * Called if task execution is successful
      */
-    abstract fun onCompleted(scheduler: Scheduler)
+    protected abstract fun onCompleted(taskManager: TaskManager)
 
     /**
      * Called if task execution throws an exception
      */
-    abstract fun onFailed(e: Exception, scheduler: Scheduler)
+    protected fun onFailed(e: Exception, taskManager: TaskManager) {
+        if (retryPolicy != null) {
+            val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
+            val delay = retryPolicy.getNextDelay(failedCount)
+            if (delay != null) {
+                val now = taskManager.dateTimeService.now()
+                taskManager.schedule(name, now + delay)
+            }
+        }
+    }
 
-    fun whenEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
+    fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
         taskManager.updateTaskStatusEnqueued(id)
     }
 
-    fun exec(id: TaskInstanceID, scheduler: Scheduler) = try {
-        scheduler.taskManager.updateTaskStatusStarted(id)
+    fun exec(id: TaskInstanceID, taskManager: TaskManager) = try {
+        taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {
             run()
         }
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
-        onCompleted(scheduler)
+        onCompleted(taskManager)
+        taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        scheduler.taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
-        onFailed(e, scheduler)
+        onFailed(e, taskManager)
+        taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }
 

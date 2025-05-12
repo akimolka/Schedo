@@ -7,6 +7,9 @@ import org.schedo.repository.inmemory.InMemoryTasks
 import org.schedo.repository.postgres.PostgresStatusRepository
 import org.schedo.repository.postgres.PostgresTasksRepository
 import org.schedo.repository.postgres.createPostgresTables
+import repository.RetryRepository
+import repository.postgres.PostgresRetryRepository
+import repository.ram.InMemoryRetry
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.sql.DataSource
@@ -35,23 +38,33 @@ class SchedulerBuilder {
 
     fun build(): Scheduler {
         val dsType = dataSourceType  // snapshot it
-        when (dsType) {
-            null -> {}
-            is DataSourceType.Postgres -> createPostgresTables(dataSource!!)
-            is DataSourceType.Other -> TODO("${dsType.name} is not supported")
-        }
 
-        val tasksRepository: TasksRepository = when (dsType) {
-            null -> InMemoryTasks()
-            is DataSourceType.Postgres -> PostgresTasksRepository(dataSource!!)
-            is DataSourceType.Other -> TODO()
+        val tasksRepository: TasksRepository
+        val statusRepository: StatusRepository
+        val retryRepository: RetryRepository
+
+        when (dsType) {
+            null -> {
+                val inMemTasks  = InMemoryTasks()
+                val inMemStatus = InMemoryStatus()
+                tasksRepository = inMemTasks
+                statusRepository = inMemStatus
+                retryRepository = InMemoryRetry(inMemTasks, inMemStatus)
+            }
+
+            is DataSourceType.Postgres -> {
+                val pgDataSource = checkNotNull(dataSource) { "Postgres data source is not set" }
+
+                createPostgresTables(pgDataSource)
+                tasksRepository = PostgresTasksRepository(pgDataSource)
+                statusRepository = PostgresStatusRepository(pgDataSource)
+                retryRepository = PostgresRetryRepository(pgDataSource)
+            }
+
+            is DataSourceType.Other ->
+                error("${dsType.name} is not supported")
         }
-        val statusRepository: StatusRepository = when (dsType) {
-            null -> InMemoryStatus()
-            is DataSourceType.Postgres -> PostgresStatusRepository(dataSource!!)
-            is DataSourceType.Other -> TODO()
-        }
-        val taskManager = TaskManager(tasksRepository, statusRepository)
+        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
         return Scheduler(taskManager, executor)
     }

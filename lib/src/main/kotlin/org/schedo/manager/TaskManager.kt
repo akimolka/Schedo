@@ -10,8 +10,11 @@ import java.util.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.*
+import org.schedo.retry.RetryPolicy
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
+import repository.RetryRepository
+import repository.ram.InMemoryRetry
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
@@ -27,16 +30,17 @@ fun TaskResult.toStatus(): Status = when(this) {
 }
 
 class TaskManager(
-    private val tasksRepository: TasksRepository = InMemoryTasks(),
-    private val statusRepository: StatusRepository = InMemoryStatus(),
+    private val tasksRepository: TasksRepository,
+    private val statusRepository: StatusRepository,
+    private val retryRepository: RetryRepository,
     private val taskResolver: TaskResolver = TaskResolver(),
-    private val dateTimeService: DateTimeService = DefaultDateTimeService(),
+    val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
 
     fun pickDueNow(): List<TaskInstance> =
         tasksRepository.pickTaskInstancesDue(dateTimeService.now())
             .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
-                it.whenEnqueued(id, this)
+                it.onEnqueued(id, this)
                 TaskInstance(id, it)
             } }
 
@@ -67,4 +71,14 @@ class TaskManager(
         taskResolver.addTask(task)
         schedule(task.name, moment)
     }
+
+    /**
+     * Returns a number of fails after last success.
+     * Note that setting [limit] to zero will result in zero return value,
+     * but will not prevent a database query.
+     * @param limit limits the number of fails. In other words,
+     * minimum of limit and number of fails after last success is returned.
+     */
+    fun failedCount(taskName: TaskName, limit: UInt) =
+        retryRepository.getFailedCount(taskName, limit)
 }

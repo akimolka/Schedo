@@ -1,11 +1,11 @@
 package org.schedo.task
 
-import org.schedo.scheduler.Scheduler
+import org.schedo.manager.TaskManager
+import org.schedo.retry.RetryPolicy
 
 abstract class OneTimeTask (
     name: TaskName,
-) : Task(name) {
-    override fun onCompleted(scheduler: Scheduler) {}
-
-    override fun onFailed(e: Exception, scheduler: Scheduler) {}
+    retryPolicy: RetryPolicy? = null,
+) : Task(name, retryPolicy) {
+    override fun onCompleted(taskManager: TaskManager) {}
 }
