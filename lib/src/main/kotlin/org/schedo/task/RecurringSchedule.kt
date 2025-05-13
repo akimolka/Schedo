@@ -15,9 +15,11 @@ class FixedDelaySchedule(private val period: TemporalAmount) : RecurringSchedule
         moment + period
 }
 
-class CronSchedule(private val executionTime: ExecutionTime) : RecurringSchedule {
+class CronSchedule(
+    private val executionTime: ExecutionTime,
+    private val zone: ZoneId = ZoneId.systemDefault()
+) : RecurringSchedule {
     override fun nextExecution(moment: OffsetDateTime): OffsetDateTime {
-        val zone: ZoneId = ZoneId.systemDefault() // TODO
         val nowZoned = moment.toInstant().atZone(zone)
         val nextZoned = executionTime.nextExecution(nowZoned).get()
         return nextZoned.toOffsetDateTime()

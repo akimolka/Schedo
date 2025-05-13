@@ -18,7 +18,6 @@ import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.time.ExecutionTime
-import org.schedo.util.nextExecution
 import java.util.*
 
 private val logger = KotlinLogging.logger {}
