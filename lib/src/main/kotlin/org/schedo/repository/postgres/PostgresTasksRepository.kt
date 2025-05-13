@@ -36,7 +36,7 @@ class PostgresTasksRepository(
     override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName> {
         val sql = """
             WITH due AS (
-              SELECT id, name
+              SELECT id
               FROM SchedoTasks
               WHERE time <= ? 
                 AND picked = FALSE
