@@ -7,7 +7,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
-class TaskResolver() {
+class TaskResolver {
     private val mapping = ConcurrentHashMap<TaskName, Task>()
 
     fun addTask(task: Task) {

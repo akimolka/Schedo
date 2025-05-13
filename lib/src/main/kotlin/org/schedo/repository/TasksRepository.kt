@@ -14,4 +14,5 @@ interface TasksRepository {
      */
     fun add(instance: ScheduledTaskInstance): Boolean
     fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName>
+    fun countTaskInstancesDue(timePoint: OffsetDateTime): Int
 }

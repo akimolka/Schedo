@@ -63,4 +63,24 @@ class PostgresTasksRepository(
             }
         }
     }
+
+    override fun countTaskInstancesDue(timePoint: OffsetDateTime): Int {
+        val countSql = """
+            WITH due AS (
+              SELECT COUNT(id)
+              FROM SchedoTasks
+              WHERE time <= ? 
+                AND picked = FALSE
+            )
+        """.trimIndent()
+
+        return dataSource.connection.use { connection ->
+            connection.prepareStatement(countSql).use { pstmt ->
+                pstmt.setObject(1, timePoint)
+                pstmt.executeQuery().use { rs ->
+                    if (rs.next()) rs.getInt(1) else 0
+                }
+            }
+        }
+    }
 }

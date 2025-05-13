@@ -1,7 +1,7 @@
 package org.schedo.scheduler
 
-import org.schedo.controller.TaskController
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.InMemoryStatus
@@ -9,6 +9,7 @@ import org.schedo.repository.inmemory.InMemoryTasks
 import org.schedo.repository.postgres.PostgresStatusRepository
 import org.schedo.repository.postgres.PostgresTasksRepository
 import org.schedo.repository.postgres.createPostgresTables
+import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
 import repository.RetryRepository
 import repository.postgres.PostgresRetryRepository
@@ -87,6 +88,9 @@ class SchedulerBuilder {
         }
         val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
+        val taskController = TaskController(tasksRepository, statusRepository)
+        val server = SchedoServer(taskController)
+
         val waiter = Waiter(executionThreadsCount, pollingInterval, busyRatio)
         val executor = Executors.newWorkStealingPool(executionThreadsCount)
 
@@ -94,6 +98,6 @@ class SchedulerBuilder {
                 "\tdataSourceType: $dataSourceType\n" +
                 "\texecutionThreadsCount: $executionThreadsCount"}
 
-        return Scheduler(taskManager, TaskController(), waiter, executor)
+        return Scheduler(taskManager, server, waiter, executor)
     }
 }

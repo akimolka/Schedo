@@ -35,6 +35,16 @@ fun retryExample(scheduler: Scheduler) {
     // At moments: right after star, in 2s, in (2+4)s, in (2+4+8)s
 }
 
+fun cronExample(scheduler: Scheduler) {
+    scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
+        println("Hello cron world")
+    }
+
+    scheduler.start()
+    Thread.sleep(10 * 1000)
+    scheduler.stop()
+}
+
 fun main() {
     val source: PGPoolingDataSource = PGPoolingDataSource()
         .apply {
@@ -50,11 +60,17 @@ fun main() {
         //.dataSource(source)
         .build()
 
-    scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
-        println("Hello cron world")
+    scheduler.scheduleAfter("task1", Duration.ofSeconds(10)) {
+        println("task1 completed")
+    }
+    scheduler.scheduleAfter("task2", Duration.ofSeconds(10)) {
+        println("task2 completed")
+    }
+    scheduler.scheduleAfter("task3", Duration.ofSeconds(10)) {
+        println("task3 completed")
     }
 
     scheduler.start()
-    Thread.sleep(100 * 1000)
+    Thread.sleep(20 * 1000)
     scheduler.stop()
 }
