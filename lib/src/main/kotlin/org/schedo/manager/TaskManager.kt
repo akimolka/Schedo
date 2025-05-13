@@ -9,12 +9,9 @@ import java.time.OffsetDateTime
 import java.util.*
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.repository.*
-import org.schedo.repository.inmemory.*
-import org.schedo.retry.RetryPolicy
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
 import repository.RetryRepository
-import repository.ram.InMemoryRetry
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
@@ -60,16 +57,35 @@ class TaskManager(
         }
     }
 
-    fun schedule(taskName: TaskName, moment: OffsetDateTime) {
-        val taskInstanceID = TaskInstanceID(UUID.randomUUID())
-        logger.info{"schedule taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-        tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
-        statusRepository.schedule(taskInstanceID, moment)
+    /**
+     * Schedules task with [taskName] to execute at [moment].
+     * Must be called for task rescheduling either after a fall
+     * or for the second and subsequent runs of a recurring task.
+     * The first scheduling of a task must be done via the overload that accepts [Task].
+     * @param taskInstanceID specifies id for this run. Do not set it manually unless you know what you are doing.
+     * The default value is a random UUID. [taskInstanceID] of the first run of a task is equal to the task's name.
+     */
+    fun schedule(
+        taskName: TaskName, moment: OffsetDateTime,
+        taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
+        val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
+        if (added) {
+            logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
+            statusRepository.schedule(taskInstanceID, moment)
+        } else {
+            logger.warn{"Did not add to the repository: taskInstance $taskInstanceID of task $taskName"}
+        }
     }
 
+    /**
+     * Schedules [task] to execute at [moment].
+     * Must be called when and only when the task is scheduled for the first time.
+     * Subsequent reschedules must use the overload which accepts [TaskName].
+     */
     fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
-        schedule(task.name, moment)
+        val firstInstanceID = TaskInstanceID(task.name.value)
+        schedule(task.name, moment, firstInstanceID)
     }
 
     /**

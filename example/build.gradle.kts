@@ -25,7 +25,7 @@ kotlin {
 }
 
 application {
-    mainClass = "example.MainKt"
+    mainClass = "MainKt"
 }
 
 tasks {

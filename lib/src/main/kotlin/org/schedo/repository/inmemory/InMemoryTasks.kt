@@ -13,10 +13,11 @@ class InMemoryTasks: TasksRepository {
     private val taskToInstances = ConcurrentHashMap<TaskName, MutableList<TaskInstanceID>>()
     private val tasks = CopyOnWriteArrayList<ScheduledTaskInstance>()
 
-    override fun add(instance: ScheduledTaskInstance) {
+    override fun add(instance: ScheduledTaskInstance): Boolean {
         tasks.add(instance)
         taskToInstances.computeIfAbsent(instance.name) { mutableListOf() }
             .add(instance.id)
+        return true
     }
 
     override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName> {
