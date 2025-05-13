@@ -57,20 +57,26 @@ fun main() {
         }
 
     val scheduler = SchedulerBuilder()
-        //.dataSource(source)
+        .dataSource(source)
         .build()
 
-    scheduler.scheduleAfter("task1", Duration.ofSeconds(10)) {
+    scheduler.scheduleAfter("task1", Duration.ofSeconds(20)) {
         println("task1 completed")
     }
-    scheduler.scheduleAfter("task2", Duration.ofSeconds(10)) {
+    scheduler.scheduleAfter("task2", Duration.ofSeconds(20)) {
         println("task2 completed")
     }
-    scheduler.scheduleAfter("task3", Duration.ofSeconds(10)) {
+    scheduler.scheduleAfter("task3", Duration.ofSeconds(20)) {
         println("task3 completed")
     }
 
     scheduler.start()
-    Thread.sleep(20 * 1000)
+    Thread.sleep(22 * 1000)
     scheduler.stop()
+
+    // failed with error https://pastebin.com/Yg6V2YG4
+//    :lib:test: Could not resolve org.jetbrains.kotlin:kotlin-test:2.1.20.
+//
+//    Possible solution:
+//    - Declare repository providing the artifact, see the documentation at https://docs.gradle.org/current/userguide/declaring_repositories.html
 }

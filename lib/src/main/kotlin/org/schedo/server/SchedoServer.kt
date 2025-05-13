@@ -5,13 +5,20 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.plugins.contentnegotiation.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
 class SchedoServer(private val taskController: TaskController) {
     fun run() {
         embeddedServer(Netty, 8080) {
-            // здесь для каждой ручки вызывает соотсветствующий метод
+            install(ContentNegotiation) {
+                json(Json {
+                    prettyPrint = true
+                    isLenient = true
+                })
+            }
             routing {
                 get("/countScheduledTasksDue") {
                     val momentParam = call.request.queryParameters["moment"]
@@ -38,7 +45,7 @@ class SchedoServer(private val taskController: TaskController) {
                     )
                 }
                 get("/listScheduledTasks") {
-                    call.respondText("List of scheduled tasks", ContentType.Text.Html)
+                    call.respond(taskController.scheduledTasks())
                 }
                 get("/") {
                     call.respondText("Hello, world!", ContentType.Text.Html)

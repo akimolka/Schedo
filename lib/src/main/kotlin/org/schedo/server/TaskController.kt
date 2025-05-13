@@ -15,7 +15,8 @@ class TaskController(
     }
 
     fun scheduledTasks(): List<ScheduledTaskInstance> {
-        return emptyList()
+        // TODO use DateTimeService?
+        return tasksRepository.listTaskInstancesDue(OffsetDateTime.now())
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {

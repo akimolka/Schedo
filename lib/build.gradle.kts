@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.0.21"
+    kotlin("plugin.serialization") version "2.1.20"
     application
 }
 
@@ -8,6 +9,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://maven.pkg.jetbrains.space/public/p/ktor/eap") }
 }
 
 dependencies {
@@ -17,6 +19,8 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.17")
     implementation("com.cronutils:cron-utils:9.2.0")
     implementation("io.ktor:ktor-server-netty:3.1.3")
+    implementation("io.ktor:ktor-server-content-negotiation:3.1.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
     testImplementation(kotlin("test"))
 }
 

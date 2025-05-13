@@ -26,8 +26,8 @@ class InMemoryTasks: TasksRepository {
         return picked.map { TaskInstanceName(it.id, it.name) }
     }
 
-    override fun countTaskInstancesDue(timePoint: OffsetDateTime): Int {
-        return tasks.count { it.executionTime.isBefore(timePoint) }
+    override fun listTaskInstancesDue(timePoint: OffsetDateTime): List<ScheduledTaskInstance> {
+        return tasks.filter { it.executionTime.isBefore(timePoint) }
     }
 
     fun getTaskInstances(taskName: TaskName): List<TaskInstanceID> =

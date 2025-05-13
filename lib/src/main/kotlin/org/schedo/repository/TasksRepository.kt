@@ -1,10 +1,12 @@
 package org.schedo.repository
 
+import kotlinx.serialization.Serializable
 import org.schedo.task.TaskInstanceName
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 
+@Serializable
 data class ScheduledTaskInstance(val id: TaskInstanceID, val name: TaskName, val executionTime: OffsetDateTime)
 
 interface TasksRepository {
@@ -14,5 +16,7 @@ interface TasksRepository {
      */
     fun add(instance: ScheduledTaskInstance): Boolean
     fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName>
-    fun countTaskInstancesDue(timePoint: OffsetDateTime): Int
+    fun listTaskInstancesDue(timePoint: OffsetDateTime): List<ScheduledTaskInstance>
+    fun countTaskInstancesDue(timePoint: OffsetDateTime): Int =
+        listTaskInstancesDue(timePoint).size
 }

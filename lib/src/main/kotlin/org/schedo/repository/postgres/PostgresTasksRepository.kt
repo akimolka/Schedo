@@ -64,14 +64,39 @@ class PostgresTasksRepository(
         }
     }
 
-    override fun countTaskInstancesDue(timePoint: OffsetDateTime): Int {
-        val countSql = """
-            WITH due AS (
-              SELECT COUNT(id)
+    override fun listTaskInstancesDue(timePoint: OffsetDateTime): List<ScheduledTaskInstance> {
+        val sql = """
+            SELECT id, name, time
               FROM SchedoTasks
               WHERE time <= ? 
                 AND picked = FALSE
-            )
+        """.trimIndent()
+
+        return dataSource.connection.use { connection ->
+            connection.prepareStatement(sql).use { pstmt ->
+                pstmt.setObject(1, timePoint)
+                pstmt.executeQuery().use { rs ->
+                    val instances = mutableListOf<ScheduledTaskInstance>()
+                    while (rs.next()) {
+                        instances += ScheduledTaskInstance(
+                            TaskInstanceID(rs.getString("id")),
+                            TaskName(rs.getString("name")),
+                            rs.getObject("time", OffsetDateTime::class.java),
+                        )
+                    }
+                    instances
+                }
+            }
+        }
+    }
+
+    override fun countTaskInstancesDue(timePoint: OffsetDateTime): Int {
+        // TODO can remove override and use
+        val countSql = """
+          SELECT COUNT(id)
+          FROM SchedoTasks
+          WHERE time <= ? 
+            AND picked = FALSE
         """.trimIndent()
 
         return dataSource.connection.use { connection ->
