@@ -13,12 +13,7 @@ import java.time.format.DateTimeParseException
 class SchedoServer(private val taskController: TaskController) {
     fun run() {
         embeddedServer(Netty, 8080) {
-            install(ContentNegotiation) {
-                json(Json {
-                    prettyPrint = true
-                    isLenient = true
-                })
-            }
+            install(ContentNegotiation)
             routing {
                 get("/countScheduledTasksDue") {
                     val momentParam = call.request.queryParameters["moment"]

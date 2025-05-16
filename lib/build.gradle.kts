@@ -20,7 +20,7 @@ dependencies {
     implementation("com.cronutils:cron-utils:9.2.0")
     implementation("io.ktor:ktor-server-netty:3.1.3")
     implementation("io.ktor:ktor-server-content-negotiation:3.1.3")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
+    implementation("io.ktor:ktor-serialization-jackson:3.1.3")
     testImplementation(kotlin("test"))
 }
 
