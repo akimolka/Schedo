@@ -2,7 +2,9 @@ import org.postgresql.ds.PGPoolingDataSource
 import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import org.schedo.scheduler.SchedulerBuilder
+import org.schedo.task.TaskBuilder
 import java.time.Duration
+import kotlin.random.Random
 
 fun basicExample(scheduler: Scheduler) {
     scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
@@ -35,6 +37,16 @@ fun retryExample(scheduler: Scheduler) {
     // At moments: right after star, in 2s, in (2+4)s, in (2+4+8)s
 }
 
+fun cronExample(scheduler: Scheduler) {
+    scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
+        println("Hello cron world")
+    }
+
+    scheduler.start()
+    Thread.sleep(10 * 1000)
+    scheduler.stop()
+}
+
 fun main() {
     val source: PGPoolingDataSource = PGPoolingDataSource()
         .apply {
@@ -47,12 +59,35 @@ fun main() {
         }
 
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
+        //.dataSource(source)
         .build()
 
-    scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
-        println("Hello cron world")
-    }
+    val stepOne = TaskBuilder("stepOne"){
+        val r = Random.nextInt(0, 3)
+        if (r == 0) {
+            println("Step One Failed")
+            throw RuntimeException("Step one Failed")
+        } else {
+            println("Step One")
+        }
+    }.retryPolicy(RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
+        .build()
+
+    val stepTwo = TaskBuilder("stepTwo"){
+        println("Step Two")
+    }.build()
+
+    val stepThree = TaskBuilder("stepThree"){
+        println("Step Three")
+    }.build()
+
+    val oneTwo = stepOne.andThen(stepTwo)
+    val oneTwoThree = stepOne.andThen(stepTwo).andThen(stepThree)
+    val oneTwoOrThree = stepOne.fold(stepTwo, stepThree)
+
+    //scheduler.scheduleRecurring(oneTwo, Duration.ofSeconds(1))
+    scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
+    //scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
 
     scheduler.start()
     Thread.sleep(10 * 1000)

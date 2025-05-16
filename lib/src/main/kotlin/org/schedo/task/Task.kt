@@ -28,12 +28,12 @@ abstract class Task(
     /**
      * Called if task execution is successful
      */
-    protected abstract fun onCompleted(taskManager: TaskManager)
+    abstract fun onCompleted(taskManager: TaskManager)
 
     /**
      * Called if task execution throws an exception
      */
-    protected fun onFailed(e: Exception, taskManager: TaskManager) {
+    open fun onFailed(e: Exception, taskManager: TaskManager) {
         if (retryPolicy != null) {
             val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
             val delay = retryPolicy.getNextDelay(failedCount)

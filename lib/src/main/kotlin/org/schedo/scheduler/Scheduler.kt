@@ -56,11 +56,30 @@ class Scheduler(
         }
     }
 
+    fun scheduleAt(task: CustomTask, moment: OffsetDateTime) {
+        val now = dateTimeService.now()
+        if (moment.isBefore(dateTimeService.now())) {
+            logger.warn { "Cannot schedule task '${task.name}' at $moment: time is in the past (now = $now)" }
+        } else {
+            for (dep in task.dependencies) {
+                taskManager.register(dep)
+            }
+            taskManager.schedule(object : OneTimeTask(task.name, task.retryPolicy) {
+                override fun run() = task.run()
+                override fun onCompleted(taskManager: TaskManager) = task.onCompleted(taskManager)
+                override fun onFailed(e: Exception, taskManager: TaskManager) = task.onFailed(e, taskManager)
+            }, moment)
+        }
+    }
+
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) =
         scheduleAfter(name, duration, null, func)
 
     fun scheduleAfter(name: String, duration: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) =
         scheduleAt(name, dateTimeService.now().plus(duration), retryPolicy, func)
+
+    fun scheduleAfter(task: CustomTask, duration: TemporalAmount) =
+        scheduleAt(task, dateTimeService.now().plus(duration))
 
     /**
      * Schedule recurring task [name] that repeats once in [period] without retry strategy.
@@ -74,6 +93,11 @@ class Scheduler(
     fun scheduleRecurring(name: String, period: TemporalAmount, retryPolicy: RetryPolicy?, func: () -> Unit) {
         val recurringSchedule = FixedDelaySchedule(period)
         scheduleRecurring(name, recurringSchedule, retryPolicy, func)
+    }
+
+    fun scheduleRecurring(task: CustomTask, period: TemporalAmount) {
+        val recurringSchedule = FixedDelaySchedule(period)
+        scheduleRecurring(task, recurringSchedule)
     }
 
     /**
@@ -93,6 +117,13 @@ class Scheduler(
         scheduleRecurring(name, recurringSchedule, retryPolicy, func)
     }
 
+    fun scheduleRecurring(task: CustomTask, cronExpr: String) {
+        val cron = cronParser.parse(cronExpr)
+        logger.info { "Task ${task.name} with schedule ${cronDescriptor.describe(cron)} has been scheduled" }
+        val recurringSchedule = CronSchedule(ExecutionTime.forCron(cron))
+        scheduleRecurring(task, recurringSchedule)
+    }
+
     /**
      * Schedule recurring task [name] that runs with [recurringSchedule] and [retryPolicy].
      */
@@ -101,6 +132,20 @@ class Scheduler(
         taskManager.schedule(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
             override fun run() = func()
         }, recurringSchedule.nextExecution(dateTimeService.now()))
+
+    private fun scheduleRecurring(task: CustomTask, recurringSchedule: RecurringSchedule) {
+        for (dep in task.dependencies) {
+            taskManager.register(dep)
+        }
+        taskManager.schedule(object : RecurringTask(task.name, recurringSchedule, task.retryPolicy) {
+            override fun run() = task.run()
+            override fun onCompleted(taskManager: TaskManager) {
+                task.onCompleted(taskManager)
+                super.onCompleted(taskManager) // reschedule
+            }
+            override fun onFailed(e: Exception, taskManager: TaskManager) = task.onFailed(e, taskManager)
+        }, recurringSchedule.nextExecution(dateTimeService.now()))
+    }
 
     fun start() {
         logger.info{ "Scheduler started" }

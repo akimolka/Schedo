@@ -88,6 +88,10 @@ class TaskManager(
         schedule(task.name, moment, firstInstanceID)
     }
 
+    fun register(task: Task) {
+        taskResolver.addTask(task)
+    }
+
     /**
      * Returns a number of fails after last success.
      * Note that setting [limit] to zero will result in zero return value,
