@@ -10,7 +10,10 @@ import io.ktor.server.plugins.contentnegotiation.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
-class SchedoServer(private val taskController: TaskController) {
+class SchedoServer(
+    private val port: Int,
+    private val taskController: TaskController
+) {
     fun run() {
         embeddedServer(Netty, 8080) {
             install(ContentNegotiation)

@@ -26,6 +26,8 @@ class SchedulerBuilder {
 
     private var dataSource: DataSource? = null  // null stands for InMemory
     private var dataSourceType: DataSourceType? = null  // null stands for InMemory
+    private var serverPort = 8080
+    private var launchServer = false
 
     // Waiter configuration
     private var pollingInterval: Duration = Duration.ZERO
@@ -55,6 +57,16 @@ class SchedulerBuilder {
 
     fun busyRatio(ratio: Double): SchedulerBuilder {
         busyRatio = ratio
+        return this
+    }
+
+    fun launchServer(): SchedulerBuilder {
+        launchServer = true
+        return this
+    }
+
+    fun serverPort(port: Int): SchedulerBuilder {
+        this.serverPort = port
         return this
     }
 
@@ -88,8 +100,11 @@ class SchedulerBuilder {
         }
         val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
-        val taskController = TaskController(tasksRepository, statusRepository)
-        val server = SchedoServer(taskController)
+        var server: SchedoServer? = null
+        if (launchServer) {
+            val taskController = TaskController(tasksRepository, statusRepository)
+            server = SchedoServer(serverPort, taskController)
+        }
 
         val waiter = Waiter(executionThreadsCount, pollingInterval, busyRatio)
         val executor = Executors.newWorkStealingPool(executionThreadsCount)

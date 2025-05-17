@@ -58,6 +58,7 @@ fun main() {
 
     val scheduler = SchedulerBuilder()
         //.dataSource(source)
+        .launchServer()
         .build()
 
     scheduler.scheduleAfter("task1", Duration.ofSeconds(20)) {

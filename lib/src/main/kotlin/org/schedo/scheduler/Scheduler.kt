@@ -26,7 +26,7 @@ private val logger = KotlinLogging.logger {}
 
 class Scheduler(
     private val taskManager: TaskManager,
-    private val server: SchedoServer,
+    private val server: SchedoServer?,
     private val waiter: Waiter,
     private val executor: ExecutorService = Executors.newCachedThreadPool(),
     private val dateTimeService: DateTimeService = DefaultDateTimeService(),
@@ -123,7 +123,7 @@ class Scheduler(
 
     fun start() {
         logger.info{ "Scheduler started" }
-        server.run()
+        server?.run()
         thread {
             run()
         }
