@@ -5,9 +5,11 @@ import org.schedo.task.TaskInstanceName
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import java.time.OffsetDateTime
+import org.schedo.util.KOffsetDateTimeSerializer
+
 
 @Serializable
-data class ScheduledTaskInstance(val id: TaskInstanceID, val name: TaskName, val executionTime: OffsetDateTime)
+data class ScheduledTaskInstance(val id: TaskInstanceID, val name: TaskName, @Serializable(KOffsetDateTimeSerializer::class) val executionTime: OffsetDateTime)
 
 interface TasksRepository {
     /**
