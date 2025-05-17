@@ -85,8 +85,8 @@ fun main() {
     val oneTwo = SequenceBuilder("oneTwo", stepOne).andThen(stepTwo).build()
     val oneTwoThree = SequenceBuilder("oneTwoThree", stepOne).andThen(stepTwo).andThen(stepThree).build()
 
-    scheduler.scheduleRecurring(oneTwo, Duration.ofSeconds(1))
-    //scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
+    //scheduler.scheduleRecurring(oneTwo, Duration.ofSeconds(1))
+    scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
 
     scheduler.start()
     Thread.sleep(10 * 1000)

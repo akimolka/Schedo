@@ -15,32 +15,22 @@ class Sequence(
 class SequenceBuilder(
     val name: String,
     val tail: Task, // not completely formed and not added to dependencies
-    val head: TaskName = TaskName(name + tail.name.value),
+    val head: TaskName = tail.name,
     val dependencies: List<Task> = emptyList(),
 ) {
     fun build(): Sequence {
-        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
-            override fun run() = tail.run()
-            override fun onCompleted(taskManager: TaskManager) {
-                tail.onCompleted(taskManager)
-            }
-            override fun onFailed(e: Exception, taskManager: TaskManager) {
-                tail.onFailed(e, taskManager)
-            }
-        }
-
-        return Sequence(name, head, dependencies + last)
+        return Sequence(name, head, dependencies + tail)
     }
 
     fun andThen(next: Task): SequenceBuilder {
         val builder = this
 
-        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
+        val last = object : Task(tail.name, tail.retryPolicy) {
             override fun run() = tail.run()
             override fun onCompleted(taskManager: TaskManager) {
                 tail.onCompleted(taskManager)
                 val now = taskManager.dateTimeService.now()
-                taskManager.schedule(TaskName(builder.name + next.name.value), now)
+                taskManager.schedule(next.name, now)
             }
             override fun onFailed(e: Exception, taskManager: TaskManager) {
                 tail.onFailed(e, taskManager)
@@ -53,7 +43,7 @@ class SequenceBuilder(
     fun orElse(next: Task): SequenceBuilder {
         val builder = this
 
-        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
+        val last = object : Task(tail.name, tail.retryPolicy) {
             override fun run() = tail.run()
             override fun onCompleted(taskManager: TaskManager) {
                 tail.onCompleted(taskManager)
@@ -61,7 +51,7 @@ class SequenceBuilder(
             override fun onFailed(e: Exception, taskManager: TaskManager) {
                 tail.onFailed(e, taskManager)
                 val now = taskManager.dateTimeService.now()
-                taskManager.schedule(TaskName(builder.name + next.name.value), now)
+                taskManager.schedule(next.name, now)
             }
         }
 
