@@ -10,13 +10,12 @@ class TaskController(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
 ) {
-    fun countTasksDue(moment: OffsetDateTime): Int {
-        return tasksRepository.countTaskInstancesDue(moment)
+    fun countScheduledTasks(due: OffsetDateTime): Int {
+        return tasksRepository.countTaskInstancesDue(due)
     }
 
-    fun scheduledTasks(): List<ScheduledTaskInstance> {
-        // TODO use DateTimeService?
-        return tasksRepository.listTaskInstancesDue(OffsetDateTime.now())
+    fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> {
+        return tasksRepository.listTaskInstancesDue(due)
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {
