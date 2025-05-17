@@ -2,6 +2,7 @@ import org.postgresql.ds.PGPoolingDataSource
 import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import org.schedo.scheduler.SchedulerBuilder
+import org.schedo.task.SequenceBuilder
 import org.schedo.task.TaskBuilder
 import java.time.Duration
 import kotlin.random.Random
@@ -81,12 +82,10 @@ fun main() {
         println("Step Three")
     }.build()
 
-    val oneTwo = stepOne.andThen(stepTwo)
-    val oneTwoThree = stepOne.andThen(stepTwo).andThen(stepThree)
-    val oneTwoOrThree = stepOne.fold(stepTwo, stepThree)
+    val oneTwo = SequenceBuilder("oneTwo", stepOne).andThen(stepTwo).build()
+    val oneTwoThree = SequenceBuilder("oneTwoThree", stepOne).andThen(stepTwo).andThen(stepThree).build()
 
-    //scheduler.scheduleRecurring(oneTwo, Duration.ofSeconds(1))
-    scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
+    scheduler.scheduleRecurring(oneTwo, Duration.ofSeconds(1))
     //scheduler.scheduleRecurring(oneTwoThree, Duration.ofSeconds(1))
 
     scheduler.start()

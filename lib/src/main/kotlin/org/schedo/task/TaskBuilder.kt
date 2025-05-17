@@ -1,73 +1,71 @@
 package org.schedo.task
 
 import org.schedo.manager.TaskManager
+import org.schedo.manager.TaskResult
 import org.schedo.retry.RetryPolicy
+import java.time.Duration
+import kotlin.system.measureTimeMillis
 
-abstract class CustomTask (
-    name: TaskName,
-    val retryPolicy: RetryPolicy? = null,
-    val dependencies: List<CustomTask> = emptyList(),
-) : Task(name, retryPolicy) {
-    fun andThen(next: CustomTask): CustomTask {
-        val parent = this
-        val composedName = TaskName("${name.value}_andThen_${next.name.value}")
+class Sequence(
+    val name: String,
+    val head: TaskName,
+    val dependencies: List<Task> = emptyList(),
+)
 
-        return object : CustomTask(composedName, retryPolicy, dependencies + next) {
-            override fun run() = parent.run()
-
+class SequenceBuilder(
+    val name: String,
+    val tail: Task, // not completely formed and not added to dependencies
+    val head: TaskName = TaskName(name + tail.name.value),
+    val dependencies: List<Task> = emptyList(),
+) {
+    fun build(): Sequence {
+        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
+            override fun run() = tail.run()
             override fun onCompleted(taskManager: TaskManager) {
-                parent.onCompleted(taskManager)
-                val now = taskManager.dateTimeService.now()
-                taskManager.schedule(next.name, now)
+                tail.onCompleted(taskManager)
             }
-
             override fun onFailed(e: Exception, taskManager: TaskManager) {
-                parent.onFailed(e, taskManager)
-                super.onFailed(e, taskManager) // handle retry
+                tail.onFailed(e, taskManager)
             }
         }
+
+        return Sequence(name, head, dependencies + last)
     }
 
-    fun orElse(next: CustomTask): CustomTask {
-        val parent = this
-        val composedName = TaskName("${name.value}_orElse_${next.name.value}")
+    fun andThen(next: Task): SequenceBuilder {
+        val builder = this
 
-        return object : CustomTask(composedName, retryPolicy, dependencies + next) {
-            override fun run() = parent.run()
-
+        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
+            override fun run() = tail.run()
             override fun onCompleted(taskManager: TaskManager) {
-                parent.onCompleted(taskManager)
-            }
-
-            override fun onFailed(e: Exception, taskManager: TaskManager) {
-                parent.onFailed(e, taskManager)
-                // Note: no attempt of retry
+                tail.onCompleted(taskManager)
                 val now = taskManager.dateTimeService.now()
-                taskManager.schedule(next.name, now)
+                taskManager.schedule(TaskName(builder.name + next.name.value), now)
+            }
+            override fun onFailed(e: Exception, taskManager: TaskManager) {
+                tail.onFailed(e, taskManager)
             }
         }
+
+        return SequenceBuilder(name, next, head, dependencies + last)
     }
 
-    fun fold(success: CustomTask, failure: CustomTask): CustomTask {
-        val parent = this
-        val composedName = TaskName("${name.value}_fold_${success.name.value}_${failure.name.value}")
+    fun orElse(next: Task): SequenceBuilder {
+        val builder = this
 
-        return object : CustomTask(composedName, retryPolicy, dependencies + success + failure) {
-            override fun run() = parent.run()
-
+        val last = object : Task(TaskName(name + tail.name.value), tail.retryPolicy) {
+            override fun run() = tail.run()
             override fun onCompleted(taskManager: TaskManager) {
-                parent.onCompleted(taskManager)
-                val now = taskManager.dateTimeService.now()
-                taskManager.schedule(success.name, now)
+                tail.onCompleted(taskManager)
             }
-
             override fun onFailed(e: Exception, taskManager: TaskManager) {
-                parent.onFailed(e, taskManager)
-                // Note: no attempt of retry
+                tail.onFailed(e, taskManager)
                 val now = taskManager.dateTimeService.now()
-                taskManager.schedule(failure.name, now)
+                taskManager.schedule(TaskName(builder.name + next.name.value), now)
             }
         }
+
+        return SequenceBuilder(name, next, head,dependencies + last)
     }
 }
 
@@ -91,11 +89,14 @@ class TaskBuilder(val name: String, val func: () -> Unit) {
         return this
     }
 
-    fun build(): CustomTask {
-        return object : CustomTask(TaskName(name), retryPolicy) {
+    fun build(): Task {
+        return object : Task(TaskName(name), retryPolicy) {
             override fun run() =  func()
             override fun onCompleted(taskManager: TaskManager) = onCompletedHandler(taskManager)
-            override fun onFailed(e: Exception, taskManager: TaskManager) = onFailedHandler(e, taskManager)
+            override fun onFailed(e: Exception, taskManager: TaskManager) {
+                onFailedHandler(e, taskManager)
+                super.onFailed(e, taskManager) // handle retry
+            }
         }
     }
 }

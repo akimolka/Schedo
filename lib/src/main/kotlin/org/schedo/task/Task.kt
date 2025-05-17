@@ -18,7 +18,7 @@ value class TaskName(val value: String)
  */
 abstract class Task(
     val name: TaskName,
-    private val retryPolicy: RetryPolicy? = null,
+    val retryPolicy: RetryPolicy? = null,
 ) {
     /**
      * Payload
