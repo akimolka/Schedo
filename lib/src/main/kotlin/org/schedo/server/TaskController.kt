@@ -17,6 +17,14 @@ class FailedTaskInfo (
     val errorMessage: String,
 )
 
+@Serializable
+class TaskInfo (
+    val name: TaskName,
+    val successCount: Int,
+    val failureCount: Int,
+    val lastExecutionTime: @Serializable(KOffsetDateTimeSerializer::class) OffsetDateTime,
+)
+
 class TaskController(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
@@ -71,6 +79,11 @@ class TaskController(
 
     fun taskHistory(taskName: TaskName): List<StatusEntry> {
         return statusRepository.taskHistory(taskName)
+    }
+
+    fun tasks(from: OffsetDateTime, to: OffsetDateTime, task: TaskName?, status: Status?): List<TaskInfo> {
+        // TODO How to use status?
+        TODO("val history = statusRepository.taskHistory(taskName, from, to)")
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {

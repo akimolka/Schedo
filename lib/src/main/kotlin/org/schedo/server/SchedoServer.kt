@@ -10,6 +10,7 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.util.pipeline.*
 import kotlinx.serialization.json.Json
+import org.schedo.repository.Status
 import org.schedo.repository.StatusEntry
 import org.schedo.task.TaskName
 import org.schedo.util.DateTimeService
@@ -49,6 +50,7 @@ class SchedoServer(
                     call.respond(taskController.failedTasks())
                 }
                 get("/tasks/{taskName}") {
+                    // What if there is a task "failed"?
                     val nameParam = call.parameters["taskName"]
                     if (nameParam == null) {
                         call.respond(
@@ -71,8 +73,16 @@ class SchedoServer(
 
                     call.respond(history)
                 }
+                get("/tasks") {
+                    val from = call.parseTime("from", OffsetDateTime.MIN) ?: return@get
+                    val to = call.parseTime("to", OffsetDateTime.MAX) ?: return@get
+                    val taskName = call.parameters["taskName"]
+                    val status = call.parameters["status"]?.let {call.parseStatus(it) ?: return@get}
+
+                    call.respond(taskController.tasks())
+                }
                 get("/") {
-                    call.respondText("Hello, world!", ContentType.Text.Html)
+                    call.respondText("Server is healthy", ContentType.Text.Html)
                 }
             }
         }.start()
@@ -86,6 +96,31 @@ class SchedoServer(
             respond(
                 HttpStatusCode.BadRequest,
                 "Invalid 'duration' format: must be ISO-8601, e.g. PT15M or P1DT2H, got '$raw'"
+            )
+            null
+        }
+    }
+
+    private suspend fun ApplicationCall.parseTime(param: String, default: OffsetDateTime): OffsetDateTime? {
+        val raw = request.queryParameters[param] ?: return default
+        return try {
+            OffsetDateTime.parse(raw)
+        } catch (e: DateTimeParseException) {
+            respond(
+                HttpStatusCode.BadRequest,
+                "Invalid '$param' format: must be ISO-8601, e.g. 2025-05-13T15:30:00Z, got '$raw'"
+            )
+            null
+        }
+    }
+
+    private suspend fun ApplicationCall.parseStatus(raw: String): Status? {
+        return try {
+            Status.valueOf(raw.uppercase())
+        } catch (e: IllegalArgumentException) {
+            respond(
+                HttpStatusCode.BadRequest,
+                "Invalid 'status' parameter: must be one of ${Status.entries.joinToString()}"
             )
             null
         }
