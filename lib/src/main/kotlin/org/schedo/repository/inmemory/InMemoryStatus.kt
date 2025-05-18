@@ -27,7 +27,7 @@ class InMemoryStatus : StatusRepository {
         statuses[instance] = StatusEntry(Status.SCHEDULED, moment)
     }
 
-    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo) {
+    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
         statuses.computeIfPresent(instance) { _, old ->
             when (status) {
                 Status.ENQUEUED -> old.copy(status = status, enqueuedAt = moment, info = old.info.merge(info))
@@ -39,6 +39,7 @@ class InMemoryStatus : StatusRepository {
     }
 
     override fun finishedTasks(): List<FinishedTask> {
+        // It would have been much easier if status table had also TaskName
         TODO("Not yet implemented")
     }
 

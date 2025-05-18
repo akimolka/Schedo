@@ -32,7 +32,7 @@ class PostgresStatusRepository (
         }
     }
 
-    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo) {
+    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
         val column = when (status) {
             Status.SCHEDULED -> "scheduledAt"
             Status.ENQUEUED -> "enqueuedAt"
@@ -49,13 +49,14 @@ class PostgresStatusRepository (
             WHERE id = ?
         """.trimIndent()
 
-        val infoJson: String = json.encodeToString(AdditionalInfo.serializer(), info)
+        val infoJson = info?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
 
         dataSource.connection.use { conn ->
             conn.prepareStatement(updateSQL).use { pstmt ->
                 pstmt.setString(1, status.name)
                 pstmt.setObject(2, moment)
-                pstmt.setString(3, infoJson)
+                if (infoJson != null) pstmt.setString(3, infoJson)
+                else pstmt.setNull(3, java.sql.Types.VARCHAR)
                 pstmt.setString(4, instance.value)
                 pstmt.executeUpdate()
             }

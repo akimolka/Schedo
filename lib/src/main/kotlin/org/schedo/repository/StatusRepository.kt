@@ -14,12 +14,16 @@ data class AdditionalInfo(
     val errorMessage: String? = null,
     val stackTrace: List<String>? = null,
 ) {
-    fun merge(rhs: AdditionalInfo): AdditionalInfo {
-        val lhs = this
-        return AdditionalInfo(
-            errorMessage = lhs.errorMessage ?: rhs.errorMessage,
-            stackTrace = lhs.stackTrace ?: rhs.stackTrace,
-        )
+    fun merge(rhs: AdditionalInfo?): AdditionalInfo {
+        if (rhs == null) {
+            return this
+        } else {
+            val lhs = this
+            return AdditionalInfo(
+                errorMessage = lhs.errorMessage ?: rhs.errorMessage,
+                stackTrace = lhs.stackTrace ?: rhs.stackTrace,
+            )
+        }
     }
 }
 
@@ -35,6 +39,6 @@ class FinishedTask(
 interface StatusRepository {
     fun insert(instance: TaskInstanceID, moment: OffsetDateTime)
     fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime,
-                     info: AdditionalInfo = AdditionalInfo())
+                     info: AdditionalInfo? = null)
     fun finishedTasks(): List<FinishedTask>
 }
