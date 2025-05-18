@@ -1,5 +1,6 @@
 package org.schedo.repository.inmemory
 
+import org.schedo.repository.AdditionalInfo
 import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository
 import org.schedo.task.TaskInstanceID
@@ -12,7 +13,8 @@ data class StatusEntry(
     val enqueuedAt: OffsetDateTime? = null,
     val startedAt: OffsetDateTime? = null,
     val finishedAt: OffsetDateTime? = null,
-    )
+    val info: AdditionalInfo = AdditionalInfo(),
+)
 
 /**
  * Writes on an entry corresponding a given instance are ordered
@@ -20,16 +22,16 @@ data class StatusEntry(
 class InMemoryStatus : StatusRepository {
     private val statuses = ConcurrentHashMap<TaskInstanceID, StatusEntry>()
 
-    override fun schedule(instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun insert(instance: TaskInstanceID, moment: OffsetDateTime) {
         statuses[instance] = StatusEntry(Status.SCHEDULED, moment)
     }
 
-    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo) {
         statuses.computeIfPresent(instance) { _, old ->
             when (status) {
-                Status.ENQUEUED -> old.copy(status = status, enqueuedAt = moment)
-                Status.STARTED -> old.copy(status = status, startedAt = moment)
-                Status.COMPLETED, Status.FAILED -> old.copy(status = status, finishedAt = moment)
+                Status.ENQUEUED -> old.copy(status = status, enqueuedAt = moment, info = old.info.merge(info))
+                Status.STARTED -> old.copy(status = status, startedAt = moment, info = old.info.merge(info))
+                Status.COMPLETED, Status.FAILED -> old.copy(status = status, finishedAt = moment, info = old.info.merge(info))
                 else -> old
             }
         }

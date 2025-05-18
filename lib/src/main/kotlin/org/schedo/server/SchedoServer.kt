@@ -43,6 +43,9 @@ class SchedoServer(
                     val due = call.parseDue(dateTimeService) ?: return@get
                     call.respond(taskController.scheduledTasks(due))
                 }
+                get("/tasks") {
+
+                }
                 get("/") {
                     call.respondText("Hello, world!", ContentType.Text.Html)
                 }

@@ -23,16 +23,19 @@ fun basicExample(scheduler: Scheduler) {
 
 fun retryExample(scheduler: Scheduler) {
     // Default exponential backoff is +2s, +4s, +8s, ... (max 3 retry)
-    scheduler.scheduleAfter("faulty", Duration.ofSeconds(0), RetryPolicy.ExpBackoff()) {
+    scheduler.scheduleAfter("faulty", Duration.ofMillis(10), RetryPolicy.ExpBackoff()) {
         println("Hello one-time world")
         throw RuntimeException("Ooops")
+    }
+    scheduler.scheduleAfter("normal", Duration.ofSeconds(5), RetryPolicy.ExpBackoff()) {
+        println("Non-faulty")
     }
 
     scheduler.start()
     Thread.sleep(20 * 1000)
     scheduler.stop()
     // Expected behaviour: Hello one-time world will be written 4 times
-    // At moments: right after star, in 2s, in (2+4)s, in (2+4+8)s
+    // At moments: right after start, in 2s, in (2+4)s, in (2+4+8)s
 }
 
 fun cronExample(scheduler: Scheduler) {
@@ -42,6 +45,22 @@ fun cronExample(scheduler: Scheduler) {
 
     scheduler.start()
     Thread.sleep(10 * 1000)
+    scheduler.stop()
+}
+
+fun serverExample(scheduler: Scheduler) {
+    scheduler.scheduleAfter("task1", Duration.ofSeconds(20)) {
+        println("task1 completed")
+    }
+    scheduler.scheduleAfter("task2", Duration.ofSeconds(20)) {
+        println("task2 completed")
+    }
+    scheduler.scheduleAfter("task3", Duration.ofSeconds(20)) {
+        println("task3 completed")
+    }
+
+    scheduler.start()
+    Thread.sleep(22 * 1000)
     scheduler.stop()
 }
 
@@ -58,26 +77,8 @@ fun main() {
 
     val scheduler = SchedulerBuilder()
         //.dataSource(source)
-        .launchServer()
+        //.launchServer()
         .build()
 
-    scheduler.scheduleAfter("task1", Duration.ofSeconds(20)) {
-        println("task1 completed")
-    }
-    scheduler.scheduleAfter("task2", Duration.ofSeconds(20)) {
-        println("task2 completed")
-    }
-    scheduler.scheduleAfter("task3", Duration.ofSeconds(20)) {
-        println("task3 completed")
-    }
-
-    scheduler.start()
-    Thread.sleep(22 * 1000)
-    scheduler.stop()
-
-    // failed with error https://pastebin.com/Yg6V2YG4
-//    :lib:test: Could not resolve org.jetbrains.kotlin:kotlin-test:2.1.20.
-//
-//    Possible solution:
-//    - Declare repository providing the artifact, see the documentation at https://docs.gradle.org/current/userguide/declaring_repositories.html
+    retryExample(scheduler)
 }
