@@ -1,10 +1,7 @@
 package org.schedo.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
-import org.schedo.repository.ScheduledTaskInstance
-import org.schedo.repository.Status
-import org.schedo.repository.StatusRepository
-import org.schedo.repository.TasksRepository
+import org.schedo.repository.*
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import org.schedo.util.KOffsetDateTimeSerializer
@@ -70,6 +67,10 @@ class TaskController(
                 )
             }
             .sortedByDescending { it.lastFailure }
+    }
+
+    fun taskHistory(taskName: TaskName): List<StatusEntry> {
+        return statusRepository.taskHistory(taskName)
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {

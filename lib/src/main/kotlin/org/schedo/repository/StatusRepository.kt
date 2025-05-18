@@ -3,6 +3,7 @@ package org.schedo.repository
 import kotlinx.serialization.Serializable
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import org.schedo.util.KOffsetDateTimeSerializer
 import java.time.OffsetDateTime
 
 enum class Status {
@@ -35,10 +36,22 @@ class FinishedTask(
     val additionalInfo: AdditionalInfo,
 )
 
+@Serializable
+data class StatusEntry(
+    val instance: TaskInstanceID,
+    val status: Status,
+    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime?,
+    @Serializable(KOffsetDateTimeSerializer::class) val enqueuedAt: OffsetDateTime? = null,
+    @Serializable(KOffsetDateTimeSerializer::class) val startedAt: OffsetDateTime? = null,
+    @Serializable(KOffsetDateTimeSerializer::class) val finishedAt: OffsetDateTime? = null,
+    val info: AdditionalInfo = AdditionalInfo(),
+)
+
 
 interface StatusRepository {
     fun insert(instance: TaskInstanceID, moment: OffsetDateTime)
     fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime,
                      info: AdditionalInfo? = null)
     fun finishedTasks(): List<FinishedTask>
+    fun taskHistory(taskName: TaskName): List<StatusEntry>
 }

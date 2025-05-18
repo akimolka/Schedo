@@ -4,7 +4,6 @@ import repository.RetryRepository
 import org.schedo.repository.Status
 import org.schedo.repository.inmemory.InMemoryStatus
 import org.schedo.repository.inmemory.InMemoryTasks
-import org.schedo.repository.inmemory.StatusEntry
 import org.schedo.task.TaskName
 
 class InMemoryRetry(

@@ -10,6 +10,8 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.util.pipeline.*
 import kotlinx.serialization.json.Json
+import org.schedo.repository.StatusEntry
+import org.schedo.task.TaskName
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
 import java.time.OffsetDateTime
@@ -45,6 +47,29 @@ class SchedoServer(
                 }
                 get("/tasks/failed") {
                     call.respond(taskController.failedTasks())
+                }
+                get("/tasks/{taskName}") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@get
+                    }
+
+                    val history: List<StatusEntry> =
+                        taskController.taskHistory(TaskName(nameParam))
+
+                    if (history.isEmpty()) {
+                        call.respond(
+                            HttpStatusCode.NotFound,
+                            "No task named '$nameParam'"
+                        )
+                        return@get
+                    }
+
+                    call.respond(history)
                 }
                 get("/") {
                     call.respondText("Hello, world!", ContentType.Text.Html)
