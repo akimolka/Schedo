@@ -9,7 +9,11 @@ import org.schedo.util.KOffsetDateTimeSerializer
 
 
 @Serializable
-data class ScheduledTaskInstance(val id: TaskInstanceID, val name: TaskName, @Serializable(KOffsetDateTimeSerializer::class) val executionTime: OffsetDateTime)
+data class ScheduledTaskInstance(
+    val id: TaskInstanceID,
+    val name: TaskName,
+    @Serializable(KOffsetDateTimeSerializer::class) val executionTime: OffsetDateTime
+)
 
 interface TasksRepository {
     /**

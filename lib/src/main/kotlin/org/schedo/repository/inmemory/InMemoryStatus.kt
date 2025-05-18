@@ -1,6 +1,7 @@
 package org.schedo.repository.inmemory
 
 import org.schedo.repository.AdditionalInfo
+import org.schedo.repository.FinishedTask
 import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository
 import org.schedo.task.TaskInstanceID
@@ -35,6 +36,10 @@ class InMemoryStatus : StatusRepository {
                 else -> old
             }
         }
+    }
+
+    override fun finishedTasks(): List<FinishedTask> {
+        TODO("Not yet implemented")
     }
 
     fun getStatus(instance: TaskInstanceID): StatusEntry? {

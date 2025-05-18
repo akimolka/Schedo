@@ -2,9 +2,11 @@ package org.schedo.repository.postgres
 
 import kotlinx.serialization.json.Json
 import org.schedo.repository.AdditionalInfo
+import org.schedo.repository.FinishedTask
 import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository
 import org.schedo.task.TaskInstanceID
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 import javax.sql.DataSource
 
@@ -56,6 +58,51 @@ class PostgresStatusRepository (
                 pstmt.setString(3, infoJson)
                 pstmt.setString(4, instance.value)
                 pstmt.executeUpdate()
+            }
+        }
+    }
+
+    override fun finishedTasks(): List<FinishedTask> {
+        val sql = """
+            WITH names AS (
+              SELECT id, name
+              FROM SchedoTasks
+            )
+            SELECT id, name, status, finishedAt, additionalInfo
+            FROM SchedoStatus
+              JOIN names USING (id)
+            WHERE finishedAt IS NOT NULL
+        """.trimIndent()
+
+        return dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { ps ->
+                ps.executeQuery().use { rs ->
+                    val results = mutableListOf<FinishedTask>()
+                    while (rs.next()) {
+                        val instanceId = TaskInstanceID(rs.getString("id"))
+                        val taskName   = TaskName(rs.getString("name"))
+                        val status     = Status.valueOf(rs.getString("status"))
+                        val finishedAt = rs.getObject(
+                            "finishedAt", OffsetDateTime::class.java
+                        )
+
+                        val infoJson = rs.getString("additionalInfo")
+                        val additionalInfo = if (infoJson.isNullOrBlank()) {
+                            AdditionalInfo()
+                        } else {
+                            json.decodeFromString<AdditionalInfo>(infoJson)
+                        }
+
+                        results += FinishedTask(
+                            instanceID     = instanceId,
+                            taskName       = taskName,
+                            status         = status,
+                            finishedAt     = finishedAt,
+                            additionalInfo = additionalInfo
+                        )
+                    }
+                    results
+                }
             }
         }
     }

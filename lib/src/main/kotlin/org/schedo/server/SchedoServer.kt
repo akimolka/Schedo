@@ -30,7 +30,7 @@ class SchedoServer(
                 })
             }
             routing {
-                get("/scheduled/count") {
+                get("/tasks/scheduled/count") {
                     val due = call.parseDue(dateTimeService) ?: return@get
                     val count = taskController.countScheduledTasks(due)
                     call.respondText(
@@ -39,12 +39,12 @@ class SchedoServer(
                         HttpStatusCode.OK
                     )
                 }
-                get("/scheduled") {
+                get("/tasks/scheduled") {
                     val due = call.parseDue(dateTimeService) ?: return@get
                     call.respond(taskController.scheduledTasks(due))
                 }
-                get("/tasks") {
-
+                get("/tasks/failed") {
+                    call.respond(taskController.failedTasks())
                 }
                 get("/") {
                     call.respondText("Hello, world!", ContentType.Text.Html)

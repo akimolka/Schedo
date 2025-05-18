@@ -1,10 +1,24 @@
 package org.schedo.server
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.serialization.Serializable
 import org.schedo.repository.ScheduledTaskInstance
+import org.schedo.repository.Status
 import org.schedo.repository.StatusRepository
 import org.schedo.repository.TasksRepository
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import org.schedo.util.KOffsetDateTimeSerializer
 import java.time.OffsetDateTime
+
+private val logger = KotlinLogging.logger {}
+
+@Serializable
+class FailedTaskInfo (
+    val name: TaskName,
+    @Serializable(KOffsetDateTimeSerializer::class) val lastFailure: OffsetDateTime,
+    val recovered: Boolean,
+    val errorMessage: String,
+)
 
 class TaskController(
     private val tasksRepository: TasksRepository,
@@ -16,6 +30,46 @@ class TaskController(
 
     fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> {
         return tasksRepository.listTaskInstancesDue(due)
+    }
+
+    fun failedTasks(): List<FailedTaskInfo> {
+        val allFinished = statusRepository.finishedTasks()
+
+        val saneFinished = allFinished.filter {
+            when (it.status) {
+                Status.COMPLETED, Status.FAILED -> true
+                else -> {
+                    logger.warn { "Ignoring unexpected status ${it.status} for task ${it.taskName}" }
+                    false
+                }
+            }
+        }
+
+        return saneFinished
+            .groupBy { it.taskName }
+            .mapNotNull { (taskName, entries) ->
+                val sorted = entries.sortedByDescending { it.finishedAt }
+
+                if (sorted.none { it.status == Status.FAILED }) return@mapNotNull null
+
+                val mostRecent = sorted.first()
+                val recovered = mostRecent.status == Status.COMPLETED
+
+                val lastFailEntry = sorted.first { it.status == Status.FAILED }
+
+                val msg = lastFailEntry
+                    .additionalInfo
+                    .errorMessage
+                    .orEmpty()
+
+                FailedTaskInfo(
+                    name        = taskName,
+                    lastFailure = lastFailEntry.finishedAt,
+                    recovered   = recovered,
+                    errorMessage= msg
+                )
+            }
+            .sortedByDescending { it.lastFailure }
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {

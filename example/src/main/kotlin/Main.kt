@@ -3,6 +3,7 @@ import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import org.schedo.scheduler.SchedulerBuilder
 import java.time.Duration
+import kotlin.random.Random
 
 fun basicExample(scheduler: Scheduler) {
     scheduler.scheduleAfter("one-time", Duration.ofSeconds(8)) {
@@ -49,18 +50,26 @@ fun cronExample(scheduler: Scheduler) {
 }
 
 fun serverExample(scheduler: Scheduler) {
-    scheduler.scheduleAfter("task1", Duration.ofSeconds(20)) {
-        println("task1 completed")
+    scheduler.scheduleRecurring("task1", Duration.ofSeconds(2),
+        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(2))) {
+        println("task1")
+        if (Random.nextInt(0, 3) == 0) {
+            throw RuntimeException("Task1 failed")
+        }
     }
-    scheduler.scheduleAfter("task2", Duration.ofSeconds(20)) {
-        println("task2 completed")
+    scheduler.scheduleRecurring("task2", Duration.ofSeconds(1),
+        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(2))) {
+        println("task2")
+        if (Random.nextInt(0, 4) == 0) {
+            throw RuntimeException("Task2 failed")
+        }
     }
     scheduler.scheduleAfter("task3", Duration.ofSeconds(20)) {
         println("task3 completed")
     }
 
     scheduler.start()
-    Thread.sleep(22 * 1000)
+    Thread.sleep(40 * 1000)
     scheduler.stop()
 }
 
@@ -76,9 +85,9 @@ fun main() {
         }
 
     val scheduler = SchedulerBuilder()
-        //.dataSource(source)
-        //.launchServer()
+        .dataSource(source)
+        .launchServer()
         .build()
 
-    retryExample(scheduler)
+    serverExample(scheduler)
 }

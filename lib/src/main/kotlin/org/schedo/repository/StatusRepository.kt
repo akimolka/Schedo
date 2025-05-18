@@ -2,6 +2,7 @@ package org.schedo.repository
 
 import kotlinx.serialization.Serializable
 import org.schedo.task.TaskInstanceID
+import org.schedo.task.TaskName
 import java.time.OffsetDateTime
 
 enum class Status {
@@ -22,7 +23,18 @@ data class AdditionalInfo(
     }
 }
 
+class FinishedTask(
+    val instanceID: TaskInstanceID,
+    val taskName: TaskName,
+    val status: Status,
+    val finishedAt: OffsetDateTime,
+    val additionalInfo: AdditionalInfo,
+)
+
+
 interface StatusRepository {
     fun insert(instance: TaskInstanceID, moment: OffsetDateTime)
-    fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo = AdditionalInfo())
+    fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime,
+                     info: AdditionalInfo = AdditionalInfo())
+    fun finishedTasks(): List<FinishedTask>
 }
