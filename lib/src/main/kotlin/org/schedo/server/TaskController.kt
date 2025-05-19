@@ -22,7 +22,7 @@ class TaskInfo (
     val name: TaskName,
     val successCount: Int,
     val failureCount: Int,
-    val lastExecutionTime: @Serializable(KOffsetDateTimeSerializer::class) OffsetDateTime,
+    val lastExecutionTime: @Serializable(KOffsetDateTimeSerializer::class) OffsetDateTime?,
 )
 
 class TaskController(
@@ -81,9 +81,34 @@ class TaskController(
         return statusRepository.taskHistory(taskName)
     }
 
-    fun tasks(from: OffsetDateTime, to: OffsetDateTime, task: TaskName?, status: Status?): List<TaskInfo> {
+    fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<TaskInfo> {
         // TODO How to use status?
-        TODO("val history = statusRepository.taskHistory(taskName, from, to)")
+        return if (taskName == null) {
+            statusRepository.history(from, to)
+                .groupBy { it.first }
+                .map { (name, pairs) ->
+                    val entries: List<StatusEntry> = pairs.map { it.second }
+                    collectTaskInfo(name, entries)
+                }
+        } else {
+            listOf(collectTaskInfo(taskName, statusRepository.taskHistory(taskName, from, to)))
+        }
+    }
+
+    private fun collectTaskInfo(taskName: TaskName, taskEntries: List<StatusEntry>): TaskInfo {
+        val successCount = taskEntries.count { it.status == Status.COMPLETED }
+        val failureCount = taskEntries.count { it.status == Status.FAILED }
+
+        val lastExecutionTime = taskEntries
+            .mapNotNull { it.finishedAt }
+            .maxOrNull()
+
+        return TaskInfo(
+            name              = taskName,
+            successCount      = successCount,
+            failureCount      = failureCount,
+            lastExecutionTime = lastExecutionTime
+        )
     }
 
     fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {

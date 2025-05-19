@@ -64,7 +64,7 @@ fun serverExample(scheduler: Scheduler) {
             throw RuntimeException("Task2 failed")
         }
     }
-    scheduler.scheduleAfter("task3", Duration.ofSeconds(20)) {
+    scheduler.scheduleAfter("task3", Duration.ofSeconds(30)) {
         println("task3 completed")
     }
 

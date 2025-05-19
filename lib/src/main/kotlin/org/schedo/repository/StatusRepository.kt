@@ -53,5 +53,8 @@ interface StatusRepository {
     fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime,
                      info: AdditionalInfo? = null)
     fun finishedTasks(): List<FinishedTask>
-    fun taskHistory(taskName: TaskName): List<StatusEntry>
+    fun taskHistory(taskName: TaskName, from: OffsetDateTime = OffsetDateTime.MIN,
+                    to: OffsetDateTime = OffsetDateTime.MAX): List<StatusEntry>
+    fun history(from: OffsetDateTime = OffsetDateTime.MIN,
+                to: OffsetDateTime = OffsetDateTime.MAX): List<Pair<TaskName, StatusEntry>>
 }

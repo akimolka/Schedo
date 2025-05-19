@@ -76,10 +76,10 @@ class SchedoServer(
                 get("/tasks") {
                     val from = call.parseTime("from", OffsetDateTime.MIN) ?: return@get
                     val to = call.parseTime("to", OffsetDateTime.MAX) ?: return@get
-                    val taskName = call.parameters["taskName"]
+                    val taskName = call.parameters["taskName"]?.let{ TaskName(it) }
                     val status = call.parameters["status"]?.let {call.parseStatus(it) ?: return@get}
 
-                    call.respond(taskController.tasks())
+                    call.respond(taskController.tasks(from, to, taskName, status))
                 }
                 get("/") {
                     call.respondText("Server is healthy", ContentType.Text.Html)

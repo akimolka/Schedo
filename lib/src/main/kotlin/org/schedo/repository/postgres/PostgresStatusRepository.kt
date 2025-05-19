@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import org.schedo.repository.*
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.sql.ResultSet
 import java.time.OffsetDateTime
 import javax.sql.DataSource
 
@@ -105,7 +106,7 @@ class PostgresStatusRepository (
         }
     }
 
-    override fun taskHistory(taskName: TaskName): List<StatusEntry> {
+    override fun taskHistory(taskName: TaskName, from: OffsetDateTime, to: OffsetDateTime): List<StatusEntry> {
         val sql = """
             WITH ids AS (
               SELECT id
@@ -115,35 +116,70 @@ class PostgresStatusRepository (
             SELECT *
             FROM SchedoStatus
               JOIN ids USING (id)
+            WHERE ? <= scheduledAt AND scheduledAt <= ?
             ORDER BY scheduledAt DESC
         """.trimIndent()
 
         return dataSource.connection.use { conn ->
             conn.prepareStatement(sql).use { ps ->
                 ps.setString(1, taskName.value)
+                ps.setObject(2, from)
+                ps.setObject(3, to)
                 ps.executeQuery().use { rs ->
                     val results = mutableListOf<StatusEntry>()
                     while (rs.next()) {
-                        val infoJson = rs.getString("additionalInfo")
-                        val additionalInfo = if (infoJson.isNullOrBlank()) {
-                            AdditionalInfo()
-                        } else {
-                            json.decodeFromString<AdditionalInfo>(infoJson)
-                        }
-
-                        results += StatusEntry(
-                            instance = TaskInstanceID(rs.getString("id")),
-                            status = Status.valueOf(rs.getString("status")),
-                            scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-                            enqueuedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-                            startedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-                            finishedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-                            info = additionalInfo,
-                        )
+                        results += loadRow(rs)
                     }
                     results
                 }
             }
         }
+    }
+
+    override fun history(from: OffsetDateTime, to: OffsetDateTime): List<Pair<TaskName, StatusEntry>> {
+        val sql = """
+            WITH names AS (
+              SELECT id, name
+              FROM SchedoTasks
+            )
+            SELECT *
+            FROM SchedoStatus
+              JOIN names USING (id)
+            WHERE ? <= scheduledAt AND scheduledAt <= ?
+            ORDER BY scheduledAt DESC
+        """.trimIndent()
+
+        return dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { ps ->
+                ps.setObject(1, from)
+                ps.setObject(2, to)
+                ps.executeQuery().use { rs ->
+                    val results = mutableListOf<Pair<TaskName, StatusEntry>>()
+                    while (rs.next()) {
+                        results += Pair(TaskName(rs.getString("name")), loadRow(rs))
+                    }
+                    results
+                }
+            }
+        }
+    }
+
+    private fun loadRow(rs: ResultSet): StatusEntry {
+        val infoJson = rs.getString("additionalInfo")
+        val additionalInfo = if (infoJson.isNullOrBlank()) {
+            AdditionalInfo()
+        } else {
+            json.decodeFromString<AdditionalInfo>(infoJson)
+        }
+
+        return StatusEntry(
+            instance = TaskInstanceID(rs.getString("id")),
+            status = Status.valueOf(rs.getString("status")),
+            scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            enqueuedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            startedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            finishedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            info = additionalInfo,
+        )
     }
 }

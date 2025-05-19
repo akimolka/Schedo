@@ -32,7 +32,11 @@ class InMemoryStatus : StatusRepository {
         TODO("Not yet implemented")
     }
 
-    override fun taskHistory(taskName: TaskName): List<StatusEntry> {
+    override fun taskHistory(taskName: TaskName, from: OffsetDateTime, to: OffsetDateTime): List<StatusEntry> {
+        TODO("Not yet implemented")
+    }
+
+    override fun history(from: OffsetDateTime, to: OffsetDateTime): List<Pair<TaskName, StatusEntry>> {
         TODO("Not yet implemented")
     }
 
