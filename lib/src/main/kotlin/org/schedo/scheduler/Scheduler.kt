@@ -18,27 +18,45 @@ import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.definition.CronDefinition
 import com.cronutils.model.time.ExecutionTime
+import org.schedo.waiter.Waiter
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    val taskManager: TaskManager,
+    private val taskManager: TaskManager,
+    private val waiter: Waiter,
     private val executor: ExecutorService = Executors.newCachedThreadPool(),
-    val dateTimeService: DateTimeService = DefaultDateTimeService(),
+    private val dateTimeService: DateTimeService = DefaultDateTimeService(),
     private val cronParser: CronParser = CronParser(CronDefinitionBuilder.instanceDefinitionFor(QUARTZ)),
     private val cronDescriptor: CronDescriptor = CronDescriptor.instance(Locale.UK),
 ) {
 
     @Volatile
-    private var stopFlag = false;
+    private var stopFlag = false
+    private var executingCount: AtomicInteger = AtomicInteger(0)
 
     private fun run() {
         while (!stopFlag) {
-            taskManager.pickDueNow().forEach { (instanceID, task) ->
-                executor.submit { task.exec(instanceID, this.taskManager) }
+            val tasks = taskManager.pickDueNow()
+            executingCount.getAndAdd(tasks.size)
+            tasks.forEach { (instanceID, task) ->
+                executor.submit {
+                    task.exec(instanceID, this.taskManager)
+
+                    executingCount.getAndDecrement()
+                    if (!waiter.isBusy(executingCount)) {
+                        waiter.wakePoller()
+                    }
+                }
             }
-            Thread.yield()
+
+            if (tasks.isEmpty()) {
+                waiter.sleepPollingInterval()
+            } else if (waiter.isBusy(executingCount)) {
+                waiter.waitLightLoad(executingCount)
+            }
         }
     }
 
