@@ -18,6 +18,7 @@ class Waiter(
     private val busyRatio: Double = 2.7,
 ) {
     private val monitor = Object()
+    @Volatile
     private var busy: Boolean = false
 
     fun isBusy(executions: AtomicInteger): Boolean {
@@ -47,13 +48,13 @@ class Waiter(
      * busy = false <-> surely awake
      */
     fun wakePoller() {
-        synchronized(monitor) {
-            val needNotify = busy
-            busy = false
-            if (needNotify) {
+        if (busy) {
+            // avoid synchronized if possible
+            synchronized(monitor) {
+                busy = false
                 monitor.notify()
             }
+            println()
         }
-        println()
     }
 }
