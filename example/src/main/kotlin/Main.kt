@@ -84,10 +84,31 @@ fun main() {
             maxConnections = 10
         }
 
+    // Scheduler settings
     val scheduler = SchedulerBuilder()
         .dataSource(source)
         .launchServer()
         .build()
 
-    serverExample(scheduler)
+    // Task scheduling
+    scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
+        println("Hello world!")
+    }
+    scheduler.scheduleRecurring("Intrusive", "*/2 * * * * ?") {
+        println("I'm here!")
+    }
+    scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(3),
+        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
+    {
+        if (Random.nextInt(0, 2) == 0) {
+            println("Faulty failed")
+            throw RuntimeException("Unexpected error")
+        } else {
+            println("Faulty completed, next repeat in 3s")
+        }
+    }
+
+    scheduler.start()
+    Thread.sleep(50 * 1000)
+    scheduler.stop()
 }
