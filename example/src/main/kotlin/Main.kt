@@ -2,6 +2,7 @@ import org.postgresql.ds.PGPoolingDataSource
 import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
 import org.schedo.scheduler.SchedulerBuilder
+import java.lang.Thread.sleep
 import java.time.Duration
 
 fun basicExample(scheduler: Scheduler) {
@@ -47,14 +48,24 @@ fun main() {
         }
 
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
+        //.dataSource(source)
+        .executionThreads(2)
+        .pollingInterval(Duration.ofMillis(100))
         .build()
 
     scheduler.scheduleRecurring("CronRecurring", "*/2 * * * * ?"){
         println("Hello cron world")
     }
+    for (i in 1..10) {
+        val millis = 10 * i.toLong()
+        for (j in 1..10) {
+            scheduler.scheduleRecurring("recurring$i/$j", Duration.ofMillis(millis)){
+                sleep(millis)
+            }
+        }
+    }
 
     scheduler.start()
-    Thread.sleep(10 * 1000)
+    Thread.sleep(5 * 1000)
     scheduler.stop()
 }
