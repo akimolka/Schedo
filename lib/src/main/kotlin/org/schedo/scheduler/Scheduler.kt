@@ -121,11 +121,14 @@ class Scheduler(
             override fun run() = func()
         }, recurringSchedule.nextExecution(dateTimeService.now()))
 
-    fun start() {
+    fun start(join: Boolean = false) {
         logger.info{ "Scheduler started" }
         server?.run()
-        thread {
+        val thread = thread {
             run()
+        }
+        if (join) {
+            thread.join()
         }
     }
 

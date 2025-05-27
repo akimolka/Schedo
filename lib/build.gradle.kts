@@ -19,6 +19,7 @@ dependencies {
     implementation("org.slf4j:slf4j-simple:2.0.17")
     implementation("com.cronutils:cron-utils:9.2.0")
     implementation("io.ktor:ktor-server-netty:3.1.3")
+    implementation("io.ktor:ktor-server-cors-jvm:3.1.3")
     implementation("io.ktor:ktor-server-content-negotiation:3.1.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
     testImplementation(kotlin("test"))
