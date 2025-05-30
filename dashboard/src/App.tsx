@@ -1,24 +1,14 @@
 import './App.css'
-import { Link, Outlet } from 'react-router'
+import { Outlet } from 'react-router'
+import NavMenu from './components/NavMenu'
 
 function App() {
   return (
-    <>
-      <nav>
-        <ul>
-          <li>
-            <Link to="/">Домой</Link>
-          </li>
-          <li>
-            <Link to="/tasks">Задачи</Link>
-          </li>
-          <li>
-            <Link to="/about">Информация</Link>
-          </li>
-        </ul>
-      </nav>
-      <Outlet />
-    </>)
+      <>
+        <NavMenu />
+        <Outlet />
+      </>
+  )
 }
 
 export default App
