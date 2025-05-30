@@ -34,7 +34,7 @@ class TaskController(
     }
 
     fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> {
-        return tasksRepository.listTaskInstancesDue(due)
+        return tasksRepository.listTaskInstancesDue(due).sortedBy { it.executionTime }
     }
 
     fun failedTasks(): List<FailedTaskInfo> {

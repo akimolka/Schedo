@@ -1,7 +1,7 @@
 import { Table } from "antd";
 import { useEffect, useState } from "react";
 
-
+// matches TaskInfo from SchedoServer
 type Task = {
     name: string,
     successCount: number,
@@ -33,9 +33,8 @@ const columns = [
 ];
 
 async function fetchTasks(): Promise<Task[]> {
-    const response = fetch('http://localhost:8080//tasks')
-
-    return (await response).json()
+    const response = await fetch('http://localhost:8080//tasks')
+    return response.json()
 }
 
 function TaskList() {

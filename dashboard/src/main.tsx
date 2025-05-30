@@ -6,6 +6,8 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import Home from './pages/Home.tsx'
 import Tasks from './pages/Tasks.tsx'
 import About from './pages/About.tsx'
+import Scheduled from './pages/Scheduled.tsx'
+import Failed from './pages/Failed.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -13,6 +15,8 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Home />} />
+          <Route path="tasks/scheduled" element={<Scheduled />} />
+          <Route path="tasks/failed" element={<Failed />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="about" element={<About />} />
         </Route>

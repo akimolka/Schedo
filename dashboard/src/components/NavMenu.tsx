@@ -7,8 +7,16 @@ const items = [
         key: "/",
     },
     {
-        label: <Link to="/tasks">Задачи</Link>,
+        label: <Link to="/tasks">All Tasks</Link>,
         key: "/tasks",
+    },
+    {
+        label: <Link to="/tasks/scheduled">Scheduled</Link>,
+        key: "/tasks/scheduled",
+    },
+    {
+        label: <Link to="/tasks/failed">Failed</Link>,
+        key: "/tasks/failed",
     },
     {
         label: <Link to="/about">Информация</Link>,
