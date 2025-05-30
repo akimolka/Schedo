@@ -50,10 +50,22 @@ class TaskManager(
     }
 
     fun updateTaskStatusFinished(taskInstanceID: TaskInstanceID, result: TaskResult) {
-        statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now())
         when (result) {
-            is TaskResult.Failed -> logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
-            is TaskResult.Success -> {}
+            is TaskResult.Failed -> {
+                logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
+                val traceSnippet = result.e.stackTrace
+                    .takeLast(10)
+                    .map(StackTraceElement::toString)
+
+                val info = AdditionalInfo(
+                    errorMessage = result.e.message ?: "Unknown error",
+                    stackTrace = traceSnippet
+                )
+                statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
+            }
+            is TaskResult.Success -> {
+                statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now())
+            }
         }
     }
 
@@ -71,7 +83,7 @@ class TaskManager(
         val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
         if (added) {
             logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-            statusRepository.schedule(taskInstanceID, moment)
+            statusRepository.insert(taskInstanceID, moment)
         } else {
             logger.warn{"Did not add to the repository: taskInstance $taskInstanceID of task $taskName"}
         }

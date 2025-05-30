@@ -1,5 +1,6 @@
 package org.schedo.task
 
+import kotlinx.serialization.Serializable
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResult
 import org.schedo.retry.RetryPolicy
@@ -8,6 +9,7 @@ import java.util.*
 import kotlin.system.measureTimeMillis
 
 @JvmInline
+@Serializable
 value class TaskName(val value: String)
 
 /**
@@ -65,6 +67,7 @@ abstract class Task(
  * TaskInstanceID is unique among TaskInstanceIDs of all instances of all tasks
  */
 @JvmInline
+@Serializable
 value class TaskInstanceID(val value: String)
 
 data class TaskInstanceName(val id: TaskInstanceID, val name: TaskName)

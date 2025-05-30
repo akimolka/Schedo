@@ -36,7 +36,7 @@ class PostgresTasksRepository(
     override fun pickTaskInstancesDue(timePoint: OffsetDateTime): List<TaskInstanceName> {
         val sql = """
             WITH due AS (
-              SELECT id, name
+              SELECT id
               FROM SchedoTasks
               WHERE time <= ? 
                 AND picked = FALSE
@@ -59,6 +59,51 @@ class PostgresTasksRepository(
                             TaskName(rs.getString("name")))
                     }
                     instances
+                }
+            }
+        }
+    }
+
+    override fun listTaskInstancesDue(timePoint: OffsetDateTime): List<ScheduledTaskInstance> {
+        val sql = """
+            SELECT id, name, time
+              FROM SchedoTasks
+              WHERE time <= ? 
+                AND picked = FALSE
+        """.trimIndent()
+
+        return dataSource.connection.use { connection ->
+            connection.prepareStatement(sql).use { pstmt ->
+                pstmt.setObject(1, timePoint)
+                pstmt.executeQuery().use { rs ->
+                    val instances = mutableListOf<ScheduledTaskInstance>()
+                    while (rs.next()) {
+                        instances += ScheduledTaskInstance(
+                            TaskInstanceID(rs.getString("id")),
+                            TaskName(rs.getString("name")),
+                            rs.getObject("time", OffsetDateTime::class.java),
+                        )
+                    }
+                    instances
+                }
+            }
+        }
+    }
+
+    override fun countTaskInstancesDue(timePoint: OffsetDateTime): Int {
+        // TODO can remove override and use
+        val countSql = """
+          SELECT COUNT(id)
+          FROM SchedoTasks
+          WHERE time <= ? 
+            AND picked = FALSE
+        """.trimIndent()
+
+        return dataSource.connection.use { connection ->
+            connection.prepareStatement(countSql).use { pstmt ->
+                pstmt.setObject(1, timePoint)
+                pstmt.executeQuery().use { rs ->
+                    if (rs.next()) rs.getInt(1) else 0
                 }
             }
         }

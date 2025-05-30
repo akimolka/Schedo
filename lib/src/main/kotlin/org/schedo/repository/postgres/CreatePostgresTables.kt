@@ -28,6 +28,7 @@ private fun createStatusTable(dataSource: DataSource) {
                 enqueuedAt TIMESTAMP WITH TIME ZONE NULL,
                 startedAt TIMESTAMP WITH TIME ZONE NULL,
                 finishedAt TIMESTAMP WITH TIME ZONE NULL,
+                additionalInfo TEXT NULL,
                 FOREIGN KEY(id) REFERENCES SchedoTasks(id)
             )
         """.trimIndent()

@@ -1,6 +1,7 @@
 package org.schedo.scheduler
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.InMemoryStatus
@@ -8,6 +9,7 @@ import org.schedo.repository.inmemory.InMemoryTasks
 import org.schedo.repository.postgres.PostgresStatusRepository
 import org.schedo.repository.postgres.PostgresTasksRepository
 import org.schedo.repository.postgres.createPostgresTables
+import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
 import repository.RetryRepository
 import repository.postgres.PostgresRetryRepository
@@ -24,6 +26,8 @@ class SchedulerBuilder {
 
     private var dataSource: DataSource? = null  // null stands for InMemory
     private var dataSourceType: DataSourceType? = null  // null stands for InMemory
+    private var serverPort = 8080
+    private var launchServer = false
 
     // Waiter configuration
     private var pollingInterval: Duration = Duration.ZERO
@@ -53,6 +57,16 @@ class SchedulerBuilder {
 
     fun busyRatio(ratio: Double): SchedulerBuilder {
         busyRatio = ratio
+        return this
+    }
+
+    fun launchServer(): SchedulerBuilder {
+        launchServer = true
+        return this
+    }
+
+    fun serverPort(port: Int): SchedulerBuilder {
+        this.serverPort = port
         return this
     }
 
@@ -86,6 +100,12 @@ class SchedulerBuilder {
         }
         val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
+        var server: SchedoServer? = null
+        if (launchServer) {
+            val taskController = TaskController(tasksRepository, statusRepository)
+            server = SchedoServer(serverPort, taskController)
+        }
+
         val waiter = Waiter(executionThreadsCount, pollingInterval, busyRatio)
         val executor = Executors.newWorkStealingPool(executionThreadsCount)
 
@@ -93,6 +113,6 @@ class SchedulerBuilder {
                 "\tdataSourceType: $dataSourceType\n" +
                 "\texecutionThreadsCount: $executionThreadsCount"}
 
-        return Scheduler(taskManager, waiter, executor)
+        return Scheduler(taskManager, server, waiter, executor)
     }
 }

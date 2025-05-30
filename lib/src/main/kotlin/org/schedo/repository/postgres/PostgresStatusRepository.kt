@@ -1,16 +1,19 @@
 package org.schedo.repository.postgres
 
-import org.schedo.repository.Status
-import org.schedo.repository.StatusRepository
+import kotlinx.serialization.json.Json
+import org.schedo.repository.*
 import org.schedo.task.TaskInstanceID
+import org.schedo.task.TaskName
+import java.sql.ResultSet
 import java.time.OffsetDateTime
 import javax.sql.DataSource
 
 class PostgresStatusRepository (
     private val dataSource: DataSource
 ) : StatusRepository {
+    private val json = Json { prettyPrint = false; encodeDefaults = true }
 
-    override fun schedule(instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun insert(instance: TaskInstanceID, moment: OffsetDateTime) {
         val insertSQL = """
             INSERT INTO SchedoStatus (id, status, scheduledAt)
             VALUES(?, ?, ?)
@@ -27,7 +30,7 @@ class PostgresStatusRepository (
         }
     }
 
-    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
         val column = when (status) {
             Status.SCHEDULED -> "scheduledAt"
             Status.ENQUEUED -> "enqueuedAt"
@@ -38,17 +41,145 @@ class PostgresStatusRepository (
 
         val updateSQL = """
             UPDATE SchedoStatus
-            SET status = ?, $column = ?
+            SET status = ?,
+                $column = ?,
+                additionalInfo = ?
             WHERE id = ?
         """.trimIndent()
+
+        val infoJson = info?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
 
         dataSource.connection.use { conn ->
             conn.prepareStatement(updateSQL).use { pstmt ->
                 pstmt.setString(1, status.name)
                 pstmt.setObject(2, moment)
-                pstmt.setString(3, instance.value)
+                if (infoJson != null) pstmt.setString(3, infoJson)
+                else pstmt.setNull(3, java.sql.Types.VARCHAR)
+                pstmt.setString(4, instance.value)
                 pstmt.executeUpdate()
             }
         }
+    }
+
+    override fun finishedTasks(): List<FinishedTask> {
+        val sql = """
+            WITH names AS (
+              SELECT id, name
+              FROM SchedoTasks
+            )
+            SELECT id, name, status, finishedAt, additionalInfo
+            FROM SchedoStatus
+              JOIN names USING (id)
+            WHERE finishedAt IS NOT NULL
+        """.trimIndent()
+
+        return dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { ps ->
+                ps.executeQuery().use { rs ->
+                    val results = mutableListOf<FinishedTask>()
+                    while (rs.next()) {
+                        val instanceId = TaskInstanceID(rs.getString("id"))
+                        val taskName   = TaskName(rs.getString("name"))
+                        val status     = Status.valueOf(rs.getString("status"))
+                        val finishedAt = rs.getObject(
+                            "finishedAt", OffsetDateTime::class.java
+                        )
+
+                        val infoJson = rs.getString("additionalInfo")
+                        val additionalInfo = if (infoJson.isNullOrBlank()) {
+                            AdditionalInfo()
+                        } else {
+                            json.decodeFromString<AdditionalInfo>(infoJson)
+                        }
+
+                        results += FinishedTask(
+                            instanceID     = instanceId,
+                            taskName       = taskName,
+                            status         = status,
+                            finishedAt     = finishedAt,
+                            additionalInfo = additionalInfo
+                        )
+                    }
+                    results
+                }
+            }
+        }
+    }
+
+    override fun taskHistory(taskName: TaskName, from: OffsetDateTime, to: OffsetDateTime): List<StatusEntry> {
+        val sql = """
+            WITH ids AS (
+              SELECT id
+              FROM SchedoTasks
+              WHERE name = ?
+            )
+            SELECT *
+            FROM SchedoStatus
+              JOIN ids USING (id)
+            WHERE ? <= scheduledAt AND scheduledAt <= ?
+            ORDER BY scheduledAt DESC
+        """.trimIndent()
+
+        return dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { ps ->
+                ps.setString(1, taskName.value)
+                ps.setObject(2, from)
+                ps.setObject(3, to)
+                ps.executeQuery().use { rs ->
+                    val results = mutableListOf<StatusEntry>()
+                    while (rs.next()) {
+                        results += loadRow(rs)
+                    }
+                    results
+                }
+            }
+        }
+    }
+
+    override fun history(from: OffsetDateTime, to: OffsetDateTime): List<Pair<TaskName, StatusEntry>> {
+        val sql = """
+            WITH names AS (
+              SELECT id, name
+              FROM SchedoTasks
+            )
+            SELECT *
+            FROM SchedoStatus
+              JOIN names USING (id)
+            WHERE ? <= scheduledAt AND scheduledAt <= ?
+            ORDER BY scheduledAt DESC
+        """.trimIndent()
+
+        return dataSource.connection.use { conn ->
+            conn.prepareStatement(sql).use { ps ->
+                ps.setObject(1, from)
+                ps.setObject(2, to)
+                ps.executeQuery().use { rs ->
+                    val results = mutableListOf<Pair<TaskName, StatusEntry>>()
+                    while (rs.next()) {
+                        results += Pair(TaskName(rs.getString("name")), loadRow(rs))
+                    }
+                    results
+                }
+            }
+        }
+    }
+
+    private fun loadRow(rs: ResultSet): StatusEntry {
+        val infoJson = rs.getString("additionalInfo")
+        val additionalInfo = if (infoJson.isNullOrBlank()) {
+            AdditionalInfo()
+        } else {
+            json.decodeFromString<AdditionalInfo>(infoJson)
+        }
+
+        return StatusEntry(
+            instance = TaskInstanceID(rs.getString("id")),
+            status = Status.valueOf(rs.getString("status")),
+            scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            enqueuedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            startedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            finishedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            info = additionalInfo,
+        )
     }
 }
