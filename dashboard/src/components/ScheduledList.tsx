@@ -1,5 +1,6 @@
 import { Table } from 'antd'
 import { useEffect, useState } from 'react'
+import {Link} from "react-router";
 
 // matches ScheduledTaskInstance from SchedoServer
 type ScheduledTask = {
@@ -18,6 +19,7 @@ const columns = [
         title: 'Task Name',
         dataIndex: 'name',
         key: 'name',
+        render: (text: string) => <Link to={`/tasks/${text}`}>{text}</Link>
     },
     {
         title: 'Execution Time',

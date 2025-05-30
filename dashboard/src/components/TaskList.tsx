@@ -1,5 +1,6 @@
 import { Table } from "antd";
 import { useEffect, useState } from "react";
+import {Link} from "react-router";
 
 // matches TaskInfo from SchedoServer
 type Task = {
@@ -14,6 +15,7 @@ const columns = [
         title: 'Name',
         dataIndex: 'name',
         key: 'name',
+        render: (text: string) => <Link to={`/tasks/${text}`}>{text}</Link>
     },
     {
         title: 'Success Count',
