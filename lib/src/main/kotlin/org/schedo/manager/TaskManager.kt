@@ -53,13 +53,10 @@ class TaskManager(
         when (result) {
             is TaskResult.Failed -> {
                 logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
-                val traceSnippet = result.e.stackTrace
-                    .takeLast(10)
-                    .map(StackTraceElement::toString)
 
                 val info = AdditionalInfo(
                     errorMessage = result.e.message ?: "Unknown error",
-                    stackTrace = traceSnippet
+                    stackTrace = result.e.stackTraceToString()
                 )
                 statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
             }

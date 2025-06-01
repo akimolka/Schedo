@@ -19,9 +19,9 @@ class InMemoryStatus : StatusRepository {
     override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
         statuses.computeIfPresent(instance) { _, old ->
             when (status) {
-                Status.ENQUEUED -> old.copy(status = status, enqueuedAt = moment, info = old.info.merge(info))
-                Status.STARTED -> old.copy(status = status, startedAt = moment, info = old.info.merge(info))
-                Status.COMPLETED, Status.FAILED -> old.copy(status = status, finishedAt = moment, info = old.info.merge(info))
+                Status.ENQUEUED -> old.copy(status = status, enqueuedAt = moment, info = mergeInfo(old.info, info))
+                Status.STARTED -> old.copy(status = status, startedAt = moment, info = mergeInfo(old.info, info))
+                Status.COMPLETED, Status.FAILED -> old.copy(status = status, finishedAt = moment, info = mergeInfo(old.info, info))
                 else -> old
             }
         }

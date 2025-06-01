@@ -63,8 +63,7 @@ class TaskController(
                 val lastFailEntry = sorted.first { it.status == Status.FAILED }
 
                 val msg = lastFailEntry
-                    .additionalInfo
-                    .errorMessage
+                    .additionalInfo?.errorMessage
                     .orEmpty()
 
                 FailedTaskInfo(

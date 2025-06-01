@@ -10,9 +10,9 @@ export type StatusEntry = {
     enqueuedAt?: string,
     startedAt?: string,
     finishedAt?: string,
-    info: {
+    info?: {
         errorMessage?: string,
-        stackTrace?: string[]
+        stackTrace?: string
     }
 }
 
