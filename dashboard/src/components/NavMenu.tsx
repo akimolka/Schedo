@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 
 const items = [
     {
-        label: <Link to="/">Домой</Link>,
+        label: <Link to="/">Home</Link>,
         key: "/",
     },
     {

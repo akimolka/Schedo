@@ -39,7 +39,11 @@ async function fetchTasks(): Promise<Task[]> {
     return response.json()
 }
 
-function TaskList() {
+/**
+ * Props:
+ *   n?: number — how many tasks to show (default: all)
+ */
+function TaskList({ n = Infinity }: { n?: number }) {
 
     const [tasks, setTasks] = useState<Task[]>([])
 
@@ -47,7 +51,9 @@ function TaskList() {
         fetchTasks().then((tasks) => setTasks(tasks))
     }, [])
 
-    return <Table dataSource={tasks} columns={columns} />;
+    const displayedTasks = tasks.slice(0, n)
+
+    return <Table dataSource={displayedTasks} columns={columns} />;
 }
 
 export default TaskList;
