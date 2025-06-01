@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {Link} from "react-router";
 
 // matches TaskInfo from SchedoServer
-type Task = {
+export type Task = {
     name: string,
     successCount: number,
     failureCount: number,
@@ -34,7 +34,7 @@ const columns = [
     },
 ];
 
-async function fetchTasks(): Promise<Task[]> {
+export async function fetchTasks(): Promise<Task[]> {
     const response = await fetch('http://localhost:8080//tasks')
     return response.json()
 }
