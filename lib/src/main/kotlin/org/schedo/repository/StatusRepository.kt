@@ -37,7 +37,7 @@ class FinishedTask(
 data class StatusEntry(
     val instance: TaskInstanceID,
     val status: Status,
-    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime?,
+    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime,
     @Serializable(KOffsetDateTimeSerializer::class) val enqueuedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val startedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val finishedAt: OffsetDateTime? = null,
