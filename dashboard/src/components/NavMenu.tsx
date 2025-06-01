@@ -18,10 +18,6 @@ const items = [
         label: <Link to="/tasks/failed">Failed</Link>,
         key: "/tasks/failed",
     },
-    {
-        label: <Link to="/about">Информация</Link>,
-        key: "/about",
-    },
 ]
 
 function NavMenu() {
