@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {Table, type TableColumnsType} from "antd";
+import {Table, Input, InputNumber, Space, Button, type TableColumnsType} from "antd";
 import {type Task, fetchTasks} from "./TaskList.tsx"
 import {Link} from "react-router";
 
@@ -40,11 +40,70 @@ function TaskListFiltered() {
 
     const [tasks, setTasks] = useState<Task[]>([])
 
+    // Filter states
+    const [nameFilter, setNameFilter] = useState<string>('')
+    const [successMin, setSuccessMin] = useState<number>(0)
+    const [successMax, setSuccessMax] = useState<number>(Infinity)
+
     useEffect(() => {
         fetchTasks().then((tasks) => setTasks(tasks))
     }, [])
 
-    return <Table dataSource={tasks} columns={columns} showSorterTooltip={{ target: 'sorter-icon' }} />;
+    // Filter logic
+    const filteredTasks = tasks.filter((task) => {
+        // Filter by name substring (case-insensitive)
+        const nameMatches = task.name.toLowerCase().includes(nameFilter.trim().toLowerCase())
+
+        // Filter by successCount bounds
+        const successOk =
+            task.successCount >= successMin && task.successCount <= successMax
+
+        return nameMatches && successOk
+    })
+
+    // Reset filters to defaults
+    const resetFilters = () => {
+        setNameFilter('')
+        setSuccessMin(0)
+        setSuccessMax(Infinity)
+    }
+
+    return (
+        <>
+            <Space style={{ marginBottom: 16 }} wrap>
+                {/* Name substring filter */}
+                <Input
+                    placeholder="Filter by Name"
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    style={{ width: 200 }}
+                    allowClear
+                />
+
+                <p>Success:</p>
+
+                {/* Success count lower bound */}
+                <InputNumber
+                    placeholder="min"
+                    min={0}
+                    value={successMin}
+                    onChange={(value) => setSuccessMin(value !== null ? value : 0)}
+                />
+
+                {/* Success count upper bound */}
+                <InputNumber
+                    placeholder="max"
+                    min={0}
+                    value={successMax}
+                    onChange={(value) => setSuccessMax(value !== null ? value : Infinity)}
+                />
+
+                <Button onClick={resetFilters}>Reset Filters</Button>
+            </Space>
+
+            <Table dataSource={filteredTasks} columns={columns} showSorterTooltip={{ target: 'sorter-icon' }} />
+        </>
+    )
 }
 
 export default TaskListFiltered;
