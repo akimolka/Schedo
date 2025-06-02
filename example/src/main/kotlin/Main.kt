@@ -86,7 +86,7 @@ fun main() {
 
     // Scheduler settings
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
+       // .dataSource(source)
         .launchServer()
         .build()
 
@@ -96,6 +96,12 @@ fun main() {
     }
     scheduler.scheduleRecurring("Intrusive", "*/2 * * * * ?") {
         println("I'm here!")
+    }
+    scheduler.scheduleRecurring("Rare", Duration.ofMinutes(1)) {
+        println("Once a minute")
+    }
+    scheduler.scheduleRecurring("Looong", Duration.ofSeconds(10)) {
+        Thread.sleep(Duration.ofSeconds(20))
     }
     scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(3),
         RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
