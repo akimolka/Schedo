@@ -7,17 +7,17 @@ import java.util.concurrent.ConcurrentHashMap
 
 class InMemoryJoin {
     private val taskToInstances = ConcurrentHashMap<TaskName, MutableList<TaskInstanceID>>()
-    private val instancesToTasks = ConcurrentHashMap<TaskInstanceID, TaskName>()
+    private val instanceToTasks = ConcurrentHashMap<TaskInstanceID, TaskName>()
 
     fun add(instanceID: TaskInstanceID, taskName: TaskName) {
         taskToInstances.computeIfAbsent(taskName) { mutableListOf() }
             .add(instanceID)
-        instancesToTasks[instanceID] = taskName
+        instanceToTasks[instanceID] = taskName
     }
 
     fun taskInstances(taskName: TaskName): List<TaskInstanceID> =
         taskToInstances[taskName]?.toList().orEmpty()
 
     fun taskName(instanceID: TaskInstanceID): TaskName? =
-        instancesToTasks[instanceID]
+        instanceToTasks[instanceID]
 }
