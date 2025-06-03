@@ -77,7 +77,7 @@ class TaskController(
     }
 
     fun taskHistory(taskName: TaskName): List<StatusEntry> {
-        return statusRepository.taskHistory(taskName)
+        return statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt }
     }
 
     fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<TaskInfo> {

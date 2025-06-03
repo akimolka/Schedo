@@ -1,6 +1,6 @@
-import { Steps, Popover } from 'antd'
+import { Steps } from 'antd'
 import { CheckCircleTwoTone, CloseCircleTwoTone, QuestionCircleTwoTone } from '@ant-design/icons'
-import type { StatusEntry } from './TaskHistoryList'
+import type { StatusEntry } from './TaskHistoryTable.tsx'
 
 // TODO for some reason it was "timestamp?: string | null"
 function formatTimestamp(timestamp?: string): string {
@@ -24,20 +24,11 @@ function formatTimestamp(timestamp?: string): string {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-function renderPopoverContent(info: { errorMessage?: string; stackTrace?: string }) {
-    return (
-        <div>
-            {info.errorMessage && (
-                <p><strong>Error:</strong> {info.errorMessage}</p>
-            )}
-            {info.stackTrace && (
-                <p><strong>Stack trace:</strong> {info.stackTrace}</p>
-            )}
-            {!info.errorMessage && !info.stackTrace && (
-                <p>No additional info</p>
-            )}
-        </div>
-    )
+const getFinishedIcon = ({ entry }: { entry: StatusEntry }) => {
+    if (!entry.finishedAt) return null
+    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a" />
+    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f" />
+    return <QuestionCircleTwoTone twoToneColor="#d9d9d9" />
 }
 
 function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
@@ -53,31 +44,15 @@ function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
     // But if the situation happens all the same, Scheduled will be active step
   const activeStep = steps.reduce((acc, step, idx) => step.time ? idx : acc, 0)
 
-  const getStatusIcon = () => {
-    if (!entry.finishedAt) return null
-    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a" />
-    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f" />
-    return <QuestionCircleTwoTone twoToneColor="#d9d9d9" />
-  }
-
   return (
     <Steps
       size="small"
       current={activeStep}
       items={steps.map((step, index) => {
-          let titleElement: React.ReactNode = step.title
-          // Show popover on last step whenever entry.info is defined
-          if (index === 3 && entry.info) {
-              titleElement = (
-                  <Popover content={renderPopoverContent(entry.info)} trigger="click">
-                      <span style={{ cursor: 'pointer' }}>{step.title}</span>
-                  </Popover>
-              )
-          }
           return {
-              title: titleElement,
+              title: step.title,
               description: formatTimestamp(step.time),
-              icon: index === 3 ? getStatusIcon() : undefined
+              icon: index === 3 ? getFinishedIcon({entry}) : undefined
           }
       })}
     />

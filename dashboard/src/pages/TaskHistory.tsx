@@ -1,12 +1,12 @@
 import { useParams } from 'react-router'
-import TaskHistoryList from "../components/TaskHistoryList"
+import TaskHistoryTable from "../components/TaskHistoryTable.tsx"
 
 function TaskHistory() {
     const { taskName } = useParams()
     return (
         <>
             <h1>History of task: {taskName}</h1>
-            <TaskHistoryList />
+            <TaskHistoryTable />
         </>
     )
 }
