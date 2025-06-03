@@ -115,6 +115,6 @@ fun main() {
     }
 
     scheduler.start()
-    Thread.sleep(50 * 1000)
-    scheduler.stop()
+//    Thread.sleep(50 * 1000)
+//    scheduler.stop()
 }

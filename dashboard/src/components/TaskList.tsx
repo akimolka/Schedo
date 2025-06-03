@@ -7,7 +7,7 @@ export type Task = {
     name: string,
     successCount: number,
     failureCount: number,
-    lastExecutionTime: string
+    lastExecutionTime?: string
 }
 
 const columns = [
@@ -53,7 +53,7 @@ function TaskList({ n = Infinity }: { n?: number }) {
 
     const displayedTasks = tasks.slice(0, n)
 
-    return <Table dataSource={displayedTasks} columns={columns} />;
+    return <Table dataSource={displayedTasks} columns={columns} rowKey="name" />;
 }
 
 export default TaskList;

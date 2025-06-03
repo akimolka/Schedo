@@ -47,7 +47,7 @@ function FailedTaskList() {
         fetchFailed().then(data => setItems(data))
     }, [])
 
-    return <Table dataSource={items} columns={columns} />
+    return <Table dataSource={items} columns={columns} rowKey="name" />
 }
 
 export default FailedTaskList
