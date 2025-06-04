@@ -1,6 +1,7 @@
 import org.postgresql.ds.PGPoolingDataSource
 import org.schedo.retry.RetryPolicy
 import org.schedo.scheduler.Scheduler
+import org.schedo.task.Chain
 import org.schedo.scheduler.SchedulerBuilder
 import java.time.Duration
 import kotlin.random.Random
@@ -73,35 +74,13 @@ fun serverExample(scheduler: Scheduler) {
     scheduler.stop()
 }
 
-fun main() {
-    val source: PGPoolingDataSource = PGPoolingDataSource()
-        .apply {
-            dataSourceName = "A Data Source"
-            serverName = "localhost:15432"
-            databaseName = "app_db"
-            user = "app_user"
-            password = "app_password"
-            maxConnections = 10
-        }
-
-    // Scheduler settings
-    val scheduler = SchedulerBuilder()
-       // .dataSource(source)
-        .launchServer()
-        .build()
-
+fun presentationExample(scheduler: Scheduler) {
     // Task scheduling
     scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
         println("Hello world!")
     }
     scheduler.scheduleRecurring("Intrusive", "*/2 * * * * ?") {
         println("I'm here!")
-    }
-    scheduler.scheduleRecurring("Rare", Duration.ofMinutes(1)) {
-        println("Once a minute")
-    }
-    scheduler.scheduleRecurring("Looong", Duration.ofSeconds(10)) {
-        Thread.sleep(Duration.ofSeconds(20))
     }
     scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(3),
         RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
@@ -113,6 +92,34 @@ fun main() {
             println("Faulty completed, next repeat in 3s")
         }
     }
+
+    scheduler.start()
+}
+
+fun main() {
+    val source: PGPoolingDataSource = PGPoolingDataSource()
+        .apply {
+            dataSourceName = "A Data Source"
+            serverName = "localhost:15432"
+            databaseName = "app_db"
+            user = "app_user"
+            password = "app_password"
+            maxConnections = 10
+        }
+
+    val scheduler = SchedulerBuilder()
+        //.dataSource(source)
+        //.launchServer()
+        .build()
+
+    val one = Chain("StepOne", null){ println("Step one") }
+    val two = Chain("StepTwo", null) { println("Step two") }
+    val three = Chain("StepThree", null) { println("Step three") }
+    val oneTwo = one.andThen(two)
+    val oneTwoThree = oneTwo.andThen(three)
+    val recurring = oneTwoThree.repeat(Duration.ofSeconds(3))
+
+    scheduler.scheduleAfter(recurring, Duration.ZERO)
 
     scheduler.start()
     Thread.sleep(50 * 1000)

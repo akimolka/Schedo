@@ -12,7 +12,8 @@ abstract class RecurringTask(
     private val schedule: RecurringSchedule,
     retryPolicy: RetryPolicy? = null,
     successHandler: (TaskManager) -> Unit = {},
-    failureHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
+    exceptionHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
+    failureHandler: (TaskManager) -> Unit = {},
 ) : Task(
     name,
     retryPolicy,
@@ -23,6 +24,7 @@ abstract class RecurringTask(
         val now = taskManager.dateTimeService.now()
         taskManager.schedule(name, schedule.nextExecution(now))
     },
+    exceptionHandler = exceptionHandler,
     failureHandler = failureHandler,
     )
 

@@ -17,6 +17,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.time.ExecutionTime
+import org.schedo.manager.TaskResolver
 import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
 import java.util.*
@@ -124,6 +125,17 @@ class Scheduler(
             logger.warn { "Task '${task.name.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
         }
         taskManager.schedule(task, moment)
+    }
+
+    fun scheduleAfter(chain: Chain, duration: TemporalAmount) =
+        scheduleAt(chain, dateTimeService.now().plus(duration))
+
+    fun scheduleAt(chain: Chain, moment: OffsetDateTime) {
+        val now = dateTimeService.now()
+        if (moment.isBefore(dateTimeService.now())) {
+            logger.warn { "Chain '${chain.head.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
+        }
+        taskManager.schedule(chain.head, moment)
     }
 
     fun start(join: Boolean = false) {

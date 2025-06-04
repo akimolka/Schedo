@@ -3,6 +3,7 @@ package org.schedo.scheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
+import org.schedo.manager.TaskResolver
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.InMemoryJoin
 import org.schedo.repository.inmemory.InMemoryStatus
@@ -21,6 +22,10 @@ import javax.sql.DataSource
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
+
+object SchedulerContext {
+    val taskResolver = TaskResolver()
+}
 
 class SchedulerBuilder {
     private var executionThreadsCount = Runtime.getRuntime().availableProcessors()
@@ -100,7 +105,7 @@ class SchedulerBuilder {
             is DataSourceType.Other ->
                 error("${dsType.name} is not supported")
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
+        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository, SchedulerContext.taskResolver)
 
         var server: SchedoServer? = null
         if (launchServer) {

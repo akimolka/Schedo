@@ -1,12 +1,14 @@
 package org.schedo.task
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResult
 import org.schedo.retry.RetryPolicy
 import java.time.Duration
-import java.util.*
 import kotlin.system.measureTimeMillis
+
+private val logger = KotlinLogging.logger {}
 
 @JvmInline
 @Serializable
@@ -18,13 +20,15 @@ value class TaskName(val value: String)
  * Each time a task is scheduled, its instance is created,
  * namely a unique TaskInstanceID is generated.
  * @param successHandler - called upon successful completion
- * @param failureHandler - additional action before retrying according to [retryPolicy]
+ * @param exceptionHandler - additional action before retrying according to [retryPolicy]
+ * @param failureHandler - called when all retry attempts failed
  */
 abstract class Task(
     val name: TaskName,
     private val retryPolicy: RetryPolicy? = null,
-    private var successHandler: (TaskManager) -> Unit = {},
-    private var failureHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
+    var successHandler: (TaskManager) -> Unit = {},
+    var exceptionHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
+    var failureHandler: (TaskManager) -> Unit = {},
 ) {
     /**
      * Payload
@@ -39,22 +43,35 @@ abstract class Task(
     }
 
     private fun retry(e: Exception, taskManager: TaskManager) {
+        var delay: Duration? = null
         if (retryPolicy != null) {
             val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
-            val delay = retryPolicy.getNextDelay(failedCount)
-            if (delay != null) {
-                val now = taskManager.dateTimeService.now()
-                taskManager.schedule(name, now + delay)
-            }
+            delay = retryPolicy.getNextDelay(failedCount)
+        }
+
+        if (delay != null) {
+            val now = taskManager.dateTimeService.now()
+            taskManager.schedule(name, now + delay)
+        } else {
+            onFailure(taskManager)
         }
     }
 
     /**
-     * Called upon task failure, i.e. when exception is caught
+     * Called upon minor task failure, i.e. when exception is caught
      */
-    private fun onFailure(e: Exception, taskManager: TaskManager) {
-        failureHandler(e, taskManager)
+    private fun onException(e: Exception, taskManager: TaskManager) {
+        exceptionHandler(e, taskManager)
         retry(e, taskManager)
+    }
+
+    /**
+     * Called upon major task failure, i.e. after last failed retry.
+     * Note that after last failed retry [onException] is called first,
+     * and only then [onFailure].
+     */
+    private fun onFailure(taskManager: TaskManager) {
+        logger.warn {"Task '${name.value}' has failed completely'"}
     }
 
     fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
@@ -69,7 +86,7 @@ abstract class Task(
         onSuccess(taskManager)
         taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        onFailure(e, taskManager)
+        onException(e, taskManager)
         taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }
