@@ -72,6 +72,7 @@ abstract class Task(
      */
     private fun onFailure(taskManager: TaskManager) {
         logger.warn {"Task '${name.value}' has failed completely'"}
+        failureHandler(taskManager)
     }
 
     fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {

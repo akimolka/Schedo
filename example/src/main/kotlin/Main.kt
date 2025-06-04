@@ -112,14 +112,27 @@ fun main() {
         //.launchServer()
         .build()
 
-    val one = Chain("StepOne", null){ println("Step one") }
+    val one = Chain("StepOne", RetryPolicy.FixedDelay(2u, Duration.ofSeconds(1))){
+        if (Random.nextInt(0, 2) == 0) {
+            println("StepOne failed")
+            throw RuntimeException("Unexpected error")
+        } else {
+            println("StepOne completed")
+        }
+    }
     val two = Chain("StepTwo", null) { println("Step two") }
     val three = Chain("StepThree", null) { println("Step three") }
-    val oneTwo = one.andThen(two)
-    val oneTwoThree = oneTwo.andThen(three)
-    val recurring = oneTwoThree.repeat(Duration.ofSeconds(3))
 
-    scheduler.scheduleAfter(recurring, Duration.ZERO)
+    // chain one -> two -> three
+//    val oneTwo = one.andThen(two)
+//    val oneTwoThree = oneTwo.andThen(three)
+//    val recurring = oneTwoThree.repeat(Duration.ofSeconds(3))
+//    scheduler.scheduleAfter(recurring, Duration.ZERO)
+
+    // chain one -> two on Success, three on Failure
+    val successBranch = one.andThen(two).repeat(Duration.ofSeconds(3))
+    one.orElse(three).repeat(Duration.ofSeconds(3))
+    scheduler.scheduleAfter(successBranch, Duration.ZERO)
 
     scheduler.start()
     Thread.sleep(50 * 1000)

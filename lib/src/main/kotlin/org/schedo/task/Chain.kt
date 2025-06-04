@@ -6,8 +6,10 @@ import java.time.Duration
 
 /**
  * Class for chaining tasks. Note that steps are not copied.
- * Each step may have at most one continuation for success and failure.
+ * Each step may have at most one continuation for success and failure (see [successBranchOverwrite]).
+ * One can set continuation for both success and failure (see [bothBranches]).
  * @sample successBranchOverwrite
+ * @sample bothBranches
  */
 class Chain(
     val head: TaskName,
@@ -56,4 +58,13 @@ fun successBranchOverwrite() {
     val three = Chain("stepThree", null){ println("Step Three") }
     val oneTwo = one.andThen(two)
     val oneThree = one.andThen(three) // Link one -> two was substituted by one -> three
+}
+
+fun bothBranches() {
+    val one = Chain("stepOne", null){ /* Faulty */ }
+    val two = Chain("stepTwo", null){ println("After successful step one") }
+    val three = Chain("stepThree", null){ println("After failed step one") }
+    val successBranch = one.andThen(two)
+    val failureBranch = one.orElse(three)
+    // schedule either one of successBranch and failureBranch
 }
