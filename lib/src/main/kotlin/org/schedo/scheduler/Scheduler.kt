@@ -64,15 +64,10 @@ class Scheduler(
     fun scheduleAt(name: String, moment: OffsetDateTime, func: () -> Unit) =
         scheduleAt(name, moment, null, func)
 
-    fun scheduleAt(name: String, moment: OffsetDateTime, retryPolicy: RetryPolicy?, func: () -> Unit) {
-        val now = dateTimeService.now()
-        if (moment.isBefore(dateTimeService.now())) {
-            logger.warn { "Task '$name' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
-        }
-        taskManager.schedule(object : OneTimeTask(TaskName(name), retryPolicy) {
+    fun scheduleAt(name: String, moment: OffsetDateTime, retryPolicy: RetryPolicy?, func: () -> Unit) =
+        scheduleAt(object : OneTimeTask(TaskName(name), retryPolicy) {
             override fun run() = func()
         }, moment)
-    }
 
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) =
         scheduleAfter(name, duration, null, func)
@@ -114,11 +109,22 @@ class Scheduler(
     /**
      * Schedule recurring task [name] that runs with [recurringSchedule] and [retryPolicy].
      */
-    private fun scheduleRecurring(name: String, recurringSchedule: RecurringSchedule,
+    fun scheduleRecurring(name: String, recurringSchedule: RecurringSchedule,
                                   retryPolicy: RetryPolicy?, func: () -> Unit) =
-        taskManager.schedule(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
+        scheduleAt(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
             override fun run() = func()
         }, recurringSchedule.nextExecution(dateTimeService.now()))
+
+    fun scheduleAfter(task: Task, duration: TemporalAmount) =
+        scheduleAt(task, dateTimeService.now().plus(duration))
+
+    fun scheduleAt(task: Task, moment: OffsetDateTime) {
+        val now = dateTimeService.now()
+        if (moment.isBefore(dateTimeService.now())) {
+            logger.warn { "Task '${task.name.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
+        }
+        taskManager.schedule(task, moment)
+    }
 
     fun start(join: Boolean = false) {
         logger.info{ "Scheduler started" }
