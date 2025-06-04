@@ -17,10 +17,14 @@ value class TaskName(val value: String)
  * Contains name, payload and handlers.
  * Each time a task is scheduled, its instance is created,
  * namely a unique TaskInstanceID is generated.
+ * @param successHandler - called upon successful completion
+ * @param failureHandler - additional action before retrying according to [retryPolicy]
  */
 abstract class Task(
     val name: TaskName,
     private val retryPolicy: RetryPolicy? = null,
+    private var successHandler: (TaskManager) -> Unit = {},
+    private var failureHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
 ) {
     /**
      * Payload
@@ -28,14 +32,13 @@ abstract class Task(
     abstract fun run()
 
     /**
-     * Called if task execution is successful
+     * Called upon successful task completion
      */
-    protected abstract fun onCompleted(taskManager: TaskManager)
+    private fun onSuccess(taskManager: TaskManager) {
+        successHandler(taskManager)
+    }
 
-    /**
-     * Called if task execution throws an exception
-     */
-    protected fun onFailed(e: Exception, taskManager: TaskManager) {
+    private fun retry(e: Exception, taskManager: TaskManager) {
         if (retryPolicy != null) {
             val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
             val delay = retryPolicy.getNextDelay(failedCount)
@@ -44,6 +47,14 @@ abstract class Task(
                 taskManager.schedule(name, now + delay)
             }
         }
+    }
+
+    /**
+     * Called upon task failure, i.e. when exception is caught
+     */
+    private fun onFailure(e: Exception, taskManager: TaskManager) {
+        failureHandler(e, taskManager)
+        retry(e, taskManager)
     }
 
     fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
@@ -55,10 +66,10 @@ abstract class Task(
         val timeSpending = measureTimeMillis {
             run()
         }
-        onCompleted(taskManager)
+        onSuccess(taskManager)
         taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
-        onFailed(e, taskManager)
+        onFailure(e, taskManager)
         taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
     }
 }

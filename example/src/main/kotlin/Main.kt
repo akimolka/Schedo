@@ -68,9 +68,9 @@ fun serverExample(scheduler: Scheduler) {
         println("task3 completed")
     }
 
-    scheduler.start(true)
-//    Thread.sleep(40 * 1000)
-//    scheduler.stop()
+    scheduler.start()
+    Thread.sleep(40 * 1000)
+    scheduler.stop()
 }
 
 fun main() {
@@ -115,6 +115,6 @@ fun main() {
     }
 
     scheduler.start()
-//    Thread.sleep(50 * 1000)
-//    scheduler.stop()
+    Thread.sleep(50 * 1000)
+    scheduler.stop()
 }

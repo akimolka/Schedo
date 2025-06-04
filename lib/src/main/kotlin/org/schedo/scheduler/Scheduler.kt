@@ -67,12 +67,11 @@ class Scheduler(
     fun scheduleAt(name: String, moment: OffsetDateTime, retryPolicy: RetryPolicy?, func: () -> Unit) {
         val now = dateTimeService.now()
         if (moment.isBefore(dateTimeService.now())) {
-            logger.warn { "Cannot schedule task '$name' at $moment: time is in the past (now = $now)" }
-        } else {
-            taskManager.schedule(object : OneTimeTask(TaskName(name), retryPolicy) {
-                override fun run() = func()
-            }, moment)
+            logger.warn { "Task '$name' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
         }
+        taskManager.schedule(object : OneTimeTask(TaskName(name), retryPolicy) {
+            override fun run() = func()
+        }, moment)
     }
 
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) =
