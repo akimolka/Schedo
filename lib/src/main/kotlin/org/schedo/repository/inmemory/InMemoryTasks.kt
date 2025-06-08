@@ -9,14 +9,14 @@ import java.time.OffsetDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 
-class InMemoryTasks: TasksRepository {
-    private val taskToInstances = ConcurrentHashMap<TaskName, MutableList<TaskInstanceID>>()
+class InMemoryTasks(
+    val inMemoryJoin: InMemoryJoin
+): TasksRepository {
     private val tasks = CopyOnWriteArrayList<ScheduledTaskInstance>()
 
     override fun add(instance: ScheduledTaskInstance): Boolean {
+        inMemoryJoin.add(instance.id, instance.name)
         tasks.add(instance)
-        taskToInstances.computeIfAbsent(instance.name) { mutableListOf() }
-            .add(instance.id)
         return true
     }
 
@@ -29,7 +29,4 @@ class InMemoryTasks: TasksRepository {
     override fun listTaskInstancesDue(timePoint: OffsetDateTime): List<ScheduledTaskInstance> {
         return tasks.filter { it.executionTime.isBefore(timePoint) }
     }
-
-    fun getTaskInstances(taskName: TaskName): List<TaskInstanceID> =
-        taskToInstances[taskName]?.toList().orEmpty()
 }

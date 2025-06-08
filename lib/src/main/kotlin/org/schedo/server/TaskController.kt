@@ -34,7 +34,7 @@ class TaskController(
     }
 
     fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> {
-        return tasksRepository.listTaskInstancesDue(due)
+        return tasksRepository.listTaskInstancesDue(due).sortedBy { it.executionTime }
     }
 
     fun failedTasks(): List<FailedTaskInfo> {
@@ -63,8 +63,7 @@ class TaskController(
                 val lastFailEntry = sorted.first { it.status == Status.FAILED }
 
                 val msg = lastFailEntry
-                    .additionalInfo
-                    .errorMessage
+                    .additionalInfo?.errorMessage
                     .orEmpty()
 
                 FailedTaskInfo(
@@ -78,7 +77,7 @@ class TaskController(
     }
 
     fun taskHistory(taskName: TaskName): List<StatusEntry> {
-        return statusRepository.taskHistory(taskName)
+        return statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt }
     }
 
     fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<TaskInfo> {

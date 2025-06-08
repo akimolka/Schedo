@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
 import org.schedo.repository.*
+import org.schedo.repository.inmemory.InMemoryJoin
 import org.schedo.repository.inmemory.InMemoryStatus
 import org.schedo.repository.inmemory.InMemoryTasks
 import org.schedo.repository.postgres.PostgresStatusRepository
@@ -79,8 +80,9 @@ class SchedulerBuilder {
 
         when (dsType) {
             null -> {
-                val inMemTasks  = InMemoryTasks()
-                val inMemStatus = InMemoryStatus()
+                val inMemoryJoin = InMemoryJoin()
+                val inMemTasks  = InMemoryTasks(inMemoryJoin)
+                val inMemStatus = InMemoryStatus(inMemoryJoin)
                 tasksRepository = inMemTasks
                 statusRepository = inMemStatus
                 retryRepository = InMemoryRetry(inMemTasks, inMemStatus)

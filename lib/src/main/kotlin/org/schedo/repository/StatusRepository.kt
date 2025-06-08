@@ -13,19 +13,16 @@ enum class Status {
 @Serializable
 data class AdditionalInfo(
     val errorMessage: String? = null,
-    val stackTrace: List<String>? = null,
-) {
-    fun merge(rhs: AdditionalInfo?): AdditionalInfo {
-        if (rhs == null) {
-            return this
-        } else {
-            val lhs = this
-            return AdditionalInfo(
-                errorMessage = lhs.errorMessage ?: rhs.errorMessage,
-                stackTrace = lhs.stackTrace ?: rhs.stackTrace,
-            )
-        }
-    }
+    val stackTrace: String? = null,
+)
+
+fun mergeInfo(lhs: AdditionalInfo?, rhs: AdditionalInfo?): AdditionalInfo? {
+    if (lhs == null && rhs == null) return null
+
+    return AdditionalInfo(
+        errorMessage = lhs?.errorMessage ?: rhs?.errorMessage,
+        stackTrace = lhs?.stackTrace ?: rhs?.stackTrace,
+    )
 }
 
 class FinishedTask(
@@ -33,18 +30,18 @@ class FinishedTask(
     val taskName: TaskName,
     val status: Status,
     val finishedAt: OffsetDateTime,
-    val additionalInfo: AdditionalInfo,
+    val additionalInfo: AdditionalInfo?,
 )
 
 @Serializable
 data class StatusEntry(
     val instance: TaskInstanceID,
     val status: Status,
-    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime?,
+    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime,
     @Serializable(KOffsetDateTimeSerializer::class) val enqueuedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val startedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val finishedAt: OffsetDateTime? = null,
-    val info: AdditionalInfo = AdditionalInfo(),
+    val info: AdditionalInfo? = null,
 )
 
 

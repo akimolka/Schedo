@@ -18,6 +18,7 @@ import org.schedo.util.DefaultDateTimeService
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 import java.time.Duration
+import io.ktor.server.plugins.cors.routing.CORS
 
 class SchedoServer(
     private val port: Int,
@@ -31,6 +32,10 @@ class SchedoServer(
                     prettyPrint = true
                     isLenient = true
                 })
+            }
+            install(CORS) {
+                anyHost()
+                anyMethod()
             }
             routing {
                 get("/tasks/scheduled/count") {

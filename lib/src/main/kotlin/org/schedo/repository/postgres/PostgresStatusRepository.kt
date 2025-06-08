@@ -85,19 +85,12 @@ class PostgresStatusRepository (
                             "finishedAt", OffsetDateTime::class.java
                         )
 
-                        val infoJson = rs.getString("additionalInfo")
-                        val additionalInfo = if (infoJson.isNullOrBlank()) {
-                            AdditionalInfo()
-                        } else {
-                            json.decodeFromString<AdditionalInfo>(infoJson)
-                        }
-
                         results += FinishedTask(
                             instanceID     = instanceId,
                             taskName       = taskName,
                             status         = status,
                             finishedAt     = finishedAt,
-                            additionalInfo = additionalInfo
+                            additionalInfo = loadAdditionalInfo(rs)
                         )
                     }
                     results
@@ -164,22 +157,24 @@ class PostgresStatusRepository (
         }
     }
 
-    private fun loadRow(rs: ResultSet): StatusEntry {
+    private fun loadAdditionalInfo(rs: ResultSet): AdditionalInfo? {
         val infoJson = rs.getString("additionalInfo")
-        val additionalInfo = if (infoJson.isNullOrBlank()) {
-            AdditionalInfo()
+        return if (infoJson.isNullOrBlank()) {
+            null
         } else {
             json.decodeFromString<AdditionalInfo>(infoJson)
         }
+    }
 
+    private fun loadRow(rs: ResultSet): StatusEntry {
         return StatusEntry(
             instance = TaskInstanceID(rs.getString("id")),
             status = Status.valueOf(rs.getString("status")),
             scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-            enqueuedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-            startedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-            finishedAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
-            info = additionalInfo,
+            enqueuedAt = rs.getObject("enqueuedAt", OffsetDateTime::class.java),
+            startedAt = rs.getObject("startedAt", OffsetDateTime::class.java),
+            finishedAt = rs.getObject("finishedAt", OffsetDateTime::class.java),
+            info = loadAdditionalInfo(rs),
         )
     }
 }
