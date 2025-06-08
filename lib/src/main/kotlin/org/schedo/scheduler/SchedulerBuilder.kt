@@ -23,10 +23,6 @@ import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
 
-object SchedulerContext {
-    val taskResolver = TaskResolver()
-}
-
 class SchedulerBuilder {
     private var executionThreadsCount = Runtime.getRuntime().availableProcessors()
 
@@ -105,7 +101,7 @@ class SchedulerBuilder {
             is DataSourceType.Other ->
                 error("${dsType.name} is not supported")
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository, SchedulerContext.taskResolver)
+        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
 
         var server: SchedoServer? = null
         if (launchServer) {

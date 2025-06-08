@@ -135,7 +135,9 @@ class Scheduler(
         if (moment.isBefore(dateTimeService.now())) {
             logger.warn { "Chain '${chain.head.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
         }
-        taskManager.schedule(chain.head, moment)
+        chain.addToTaskResolver(taskManager.taskResolver)
+        val taskName = chain.head
+        taskManager.schedule(taskName, moment, TaskInstanceID(taskName.value))
     }
 
     fun start(join: Boolean = false) {
