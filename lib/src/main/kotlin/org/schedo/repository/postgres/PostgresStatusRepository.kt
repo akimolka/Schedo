@@ -31,32 +31,75 @@ class PostgresStatusRepository (
     }
 
     override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
-        val column = when (status) {
+        val timeColumn = when (status) {
             Status.SCHEDULED -> "scheduledAt"
-            Status.ENQUEUED -> "enqueuedAt"
-            Status.STARTED -> "startedAt"
-            Status.COMPLETED -> "finishedAt"
-            Status.FAILED -> "finishedAt"
+            Status.ENQUEUED  -> "enqueuedAt"
+            Status.STARTED   -> "startedAt"
+            Status.COMPLETED, Status.FAILED    -> "finishedAt"
         }
 
-        val updateSQL = """
-            UPDATE SchedoStatus
-            SET status = ?,
-                $column = ?,
+        // Entry associated with this instance won't be changed by other servers
+        // So SELECT ... FOR UPDATE is unnecessary
+        val readInfoSql = """
+        SELECT additionalInfo
+            FROM SchedoStatus
+            WHERE id = ?
+        """.trimIndent()
+
+        val updateBase = """
+        UPDATE SchedoStatus
+           SET status = ?,
+               $timeColumn = ?
+        """.trimIndent()
+
+        // If info is null, additionalInfo in SchedoStatus in not updated
+        // Otherwise, previous additionalInfo is read, values are merged and new value is written
+        val updateSqlWithInfo = """
+            $updateBase,
                 additionalInfo = ?
             WHERE id = ?
         """.trimIndent()
 
-        val infoJson = info?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
+        val updateSqlWithoutInfo = """
+            $updateBase
+            WHERE id = ?
+        """.trimIndent()
 
+        val mergedInfoJson: String? = if (info != null) {
+            var prevInfo: AdditionalInfo? = null
+            dataSource.connection.use { conn ->
+                conn.prepareStatement(readInfoSql).use { ps ->
+                    ps.setString(1, instance.value)
+                    ps.executeQuery().use { rs ->
+                        if (rs.next()) {
+                            prevInfo = loadAdditionalInfo(rs)
+                        }
+                    }
+                }
+            }
+
+            // merge and encode
+            mergeInfo(prevInfo, info)
+                ?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
+        } else {
+            null
+        }
+
+        val sql = if (info != null) updateSqlWithInfo else updateSqlWithoutInfo
         dataSource.connection.use { conn ->
-            conn.prepareStatement(updateSQL).use { pstmt ->
-                pstmt.setString(1, status.name)
-                pstmt.setObject(2, moment)
-                if (infoJson != null) pstmt.setString(3, infoJson)
-                else pstmt.setNull(3, java.sql.Types.VARCHAR)
-                pstmt.setString(4, instance.value)
-                pstmt.executeUpdate()
+            conn.prepareStatement(sql).use { ps ->
+                ps.setString(1, status.name)         // status
+                ps.setObject(2, moment)              // timestamp column
+
+                if (info != null) {
+                    // bind merged additionalInfo JSON
+                    ps.setString(3, mergedInfoJson)
+                    ps.setString(4, instance.value)  // WHERE id=?
+                } else {
+                    // no additionalInfo param, so idx=3 is id
+                    ps.setString(3, instance.value)
+                }
+                ps.executeUpdate()
             }
         }
     }
