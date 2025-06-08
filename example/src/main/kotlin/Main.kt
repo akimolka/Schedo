@@ -32,12 +32,12 @@ fun retryExample(scheduler: Scheduler) {
     scheduler.scheduleAfter("normal", Duration.ofSeconds(5), RetryPolicy.ExpBackoff()) {
         println("Non-faulty")
     }
+    // Expected behaviour: Hello one-time world will be written 4 times
+    // At moments: right after start, in 2s, in (2+4)s, in (2+4+8)s
 
     scheduler.start()
     Thread.sleep(20 * 1000)
     scheduler.stop()
-    // Expected behaviour: Hello one-time world will be written 4 times
-    // At moments: right after start, in 2s, in (2+4)s, in (2+4+8)s
 }
 
 fun cronExample(scheduler: Scheduler) {
@@ -74,28 +74,6 @@ fun serverExample(scheduler: Scheduler) {
 //    scheduler.stop()
 }
 
-fun presentationExample(scheduler: Scheduler) {
-    // Task scheduling
-    scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
-        println("Hello world!")
-    }
-    scheduler.scheduleRecurring("Intrusive", "*/2 * * * * ?") {
-        println("I'm here!")
-    }
-    scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(3),
-        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
-    {
-        if (Random.nextInt(0, 2) == 0) {
-            println("Faulty failed")
-            throw RuntimeException("Unexpected error")
-        } else {
-            println("Faulty completed, next repeat in 3s")
-        }
-    }
-
-    scheduler.start()
-}
-
 fun chainingExample(scheduler: Scheduler) {
     val one = Chain("StepOne", RetryPolicy.FixedDelay(2u, Duration.ofSeconds(1))){
         if (Random.nextInt(0, 2) == 0) {
@@ -120,23 +98,7 @@ fun chainingExample(scheduler: Scheduler) {
     scheduler.scheduleAfter(successBranch, Duration.ZERO)
 }
 
-fun main() {
-    val source: PGPoolingDataSource = PGPoolingDataSource()
-        .apply {
-            dataSourceName = "A Data Source"
-            serverName = "localhost:15432"
-            databaseName = "app_db"
-            user = "app_user"
-            password = "app_password"
-            maxConnections = 10
-        }
-
-    val scheduler = SchedulerBuilder()
-        .dataSource(source)
-        .launchServer()
-        .build()
-
-    // Task scheduling
+fun serverExample2(scheduler: Scheduler) {
     scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
         println("Hello world!")
     }
@@ -159,6 +121,28 @@ fun main() {
             println("Faulty completed, next repeat in 3s")
         }
     }
+
+    scheduler.start()
+}
+
+fun main() {
+    val source: PGPoolingDataSource = PGPoolingDataSource()
+        .apply {
+            dataSourceName = "A Data Source"
+            serverName = "localhost:15432"
+            databaseName = "app_db"
+            user = "app_user"
+            password = "app_password"
+            maxConnections = 10
+        }
+
+    // Scheduler settings
+    val scheduler = SchedulerBuilder()
+        .dataSource(source)
+        //.launchServer()
+        .build()
+
+    retryExample(scheduler)
 
     scheduler.start()
 //    Thread.sleep(50 * 1000)

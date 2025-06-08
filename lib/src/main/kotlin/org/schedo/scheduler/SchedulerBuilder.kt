@@ -5,18 +5,16 @@ import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResolver
 import org.schedo.repository.*
+import org.schedo.repository.inmemory.InMemoryExecutions
 import org.schedo.repository.inmemory.InMemoryJoin
 import org.schedo.repository.inmemory.InMemoryStatus
 import org.schedo.repository.inmemory.InMemoryTasks
+import org.schedo.repository.postgres.PostgresExecutionsRepository
 import org.schedo.repository.postgres.PostgresStatusRepository
 import org.schedo.repository.postgres.PostgresTasksRepository
 import org.schedo.repository.postgres.createPostgresTables
 import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
-import repository.RetryRepository
-import repository.postgres.PostgresRetryRepository
-import repository.ram.InMemoryRetry
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.sql.DataSource
 import java.time.Duration
@@ -77,7 +75,7 @@ class SchedulerBuilder {
 
         val tasksRepository: TasksRepository
         val statusRepository: StatusRepository
-        val retryRepository: RetryRepository
+        val executionsRepository: ExecutionsRepository
 
         when (dsType) {
             null -> {
@@ -86,7 +84,7 @@ class SchedulerBuilder {
                 val inMemStatus = InMemoryStatus(inMemoryJoin)
                 tasksRepository = inMemTasks
                 statusRepository = inMemStatus
-                retryRepository = InMemoryRetry(inMemTasks, inMemStatus)
+                executionsRepository = InMemoryExecutions()
             }
 
             is DataSourceType.Postgres -> {
@@ -95,13 +93,13 @@ class SchedulerBuilder {
                 createPostgresTables(pgDataSource)
                 tasksRepository = PostgresTasksRepository(pgDataSource)
                 statusRepository = PostgresStatusRepository(pgDataSource)
-                retryRepository = PostgresRetryRepository(pgDataSource)
+                executionsRepository = PostgresExecutionsRepository(pgDataSource)
             }
 
             is DataSourceType.Other ->
                 error("${dsType.name} is not supported")
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
+        val taskManager = TaskManager(tasksRepository, statusRepository, executionsRepository)
 
         var server: SchedoServer? = null
         if (launchServer) {

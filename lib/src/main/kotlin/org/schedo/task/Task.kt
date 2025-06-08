@@ -51,7 +51,7 @@ abstract class Task(
 
         if (delay != null) {
             val now = taskManager.dateTimeService.now()
-            taskManager.schedule(name, now + delay)
+            taskManager.schedule(name, now + delay, isRetry=true)
         } else {
             onFailure(taskManager)
         }

@@ -137,7 +137,7 @@ class Scheduler(
         }
         chain.addToTaskResolver(taskManager.taskResolver)
         val taskName = chain.head
-        taskManager.schedule(taskName, moment, TaskInstanceID(taskName.value))
+        taskManager.schedule(taskName, moment, false, TaskInstanceID(taskName.value))
     }
 
     fun start(join: Boolean = false) {

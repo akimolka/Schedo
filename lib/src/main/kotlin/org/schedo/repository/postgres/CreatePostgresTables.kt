@@ -40,7 +40,26 @@ private fun createStatusTable(dataSource: DataSource) {
     }
 }
 
+
+// TODO name references what?
+private fun createExecutionTable(dataSource: DataSource) {
+    val createTableSQL = """
+            CREATE TABLE IF NOT EXISTS SchedoExecutions (
+                name VARCHAR(255) PRIMARY KEY,
+                retryCount INTEGER DEFAULT 0,
+                CONSTRAINT retryCount check (retryCount >= 0)
+            )
+        """.trimIndent()
+
+    dataSource.connection.use { connection ->
+        connection.createStatement().use { stmt ->
+            stmt.executeUpdate(createTableSQL)
+        }
+    }
+}
+
 fun createPostgresTables(dataSource: DataSource) {
     createTasksTable(dataSource)
     createStatusTable(dataSource)
+    createExecutionTable(dataSource)
 }
