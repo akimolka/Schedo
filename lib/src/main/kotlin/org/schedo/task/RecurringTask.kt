@@ -5,7 +5,8 @@ import org.schedo.retry.RetryPolicy
 
 /**
  * @param successHandler - additional action before rescheduling according to [schedule]
- * @param failureHandler - additional action before retrying according to [retryPolicy]
+ * @param exceptionHandler - additional action before retrying according to [retryPolicy]
+ * @param failureHandler - action when the limit of retry attempts is reached
  */
 abstract class RecurringTask(
     name: TaskName,
@@ -17,14 +18,14 @@ abstract class RecurringTask(
 ) : Task(
     name,
     retryPolicy,
-    successHandler = { taskManager ->
-        // additional action
-        successHandler(taskManager)
-        // rescheduling
-        val now = taskManager.dateTimeService.now()
-        taskManager.schedule(name, schedule.nextExecution(now))
-    },
-    exceptionHandler = exceptionHandler,
-    failureHandler = failureHandler,
+    successHandlers = listOf(
+        successHandler,
+        { taskManager ->
+            // rescheduling
+            val now = taskManager.dateTimeService.now()
+            taskManager.schedule(name, schedule.nextExecution(now))
+        }),
+    exceptionHandlers = listOf(exceptionHandler),
+    failureHandlers = listOf(failureHandler),
     )
 

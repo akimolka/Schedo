@@ -19,16 +19,16 @@ value class TaskName(val value: String)
  * Contains name, payload and handlers.
  * Each time a task is scheduled, its instance is created,
  * namely a unique TaskInstanceID is generated.
- * @param successHandler - called upon successful completion
- * @param exceptionHandler - additional action before retrying according to [retryPolicy]
- * @param failureHandler - called when all retry attempts failed
+ * @param successHandlers - called in given order upon successful completion
+ * @param exceptionHandlers - additional actions before retrying according to [retryPolicy]
+ * @param failureHandlers - called in given order when all retry attempts failed
  */
 abstract class Task(
     val name: TaskName,
     private val retryPolicy: RetryPolicy? = null,
-    var successHandler: (TaskManager) -> Unit = {},
-    var exceptionHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
-    var failureHandler: (TaskManager) -> Unit = {},
+    var successHandlers: List<(TaskManager) -> Unit> = emptyList(),
+    var exceptionHandlers: List<(Exception, TaskManager) -> Unit> = emptyList(),
+    var failureHandlers: List<(TaskManager) -> Unit> = emptyList(),
 ) {
     /**
      * Payload
@@ -39,7 +39,7 @@ abstract class Task(
      * Called upon successful task completion
      */
     private fun onSuccess(taskManager: TaskManager) {
-        successHandler(taskManager)
+        successHandlers.forEach{ it(taskManager) }
     }
 
     private fun retry(e: Exception, taskManager: TaskManager) {
@@ -61,7 +61,7 @@ abstract class Task(
      * Called upon minor task failure, i.e. when exception is caught
      */
     private fun onException(e: Exception, taskManager: TaskManager) {
-        exceptionHandler(e, taskManager)
+        exceptionHandlers.forEach{ it(e, taskManager) }
         retry(e, taskManager)
     }
 
@@ -72,7 +72,7 @@ abstract class Task(
      */
     private fun onFailure(taskManager: TaskManager) {
         logger.warn {"Task '${name.value}' has failed completely'"}
-        failureHandler(taskManager)
+        failureHandlers.forEach{ it(taskManager) }
     }
 
     fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {

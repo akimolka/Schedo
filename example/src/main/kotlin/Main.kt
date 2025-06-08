@@ -124,15 +124,15 @@ fun main() {
     val three = Chain("StepThree", null) { println("Step three") }
 
     // chain one -> two -> three
-//    val oneTwo = one.andThen(two)
-//    val oneTwoThree = oneTwo.andThen(three)
-//    val recurring = oneTwoThree.repeat(Duration.ofSeconds(3))
-//    scheduler.scheduleAfter(recurring, Duration.ZERO)
+    val oneTwo = one.andThen(two)
+    val oneTwoThree = oneTwo.andThen(three)
+    val recurring = oneTwoThree.repeat(Duration.ofSeconds(3))
+    scheduler.scheduleAfter(recurring, Duration.ZERO)
 
     // chain one -> two on Success, three on Failure
-    val successBranch = one.andThen(two).repeat(Duration.ofSeconds(3))
-    one.orElse(three).repeat(Duration.ofSeconds(3))
-    scheduler.scheduleAfter(successBranch, Duration.ZERO)
+//    val successBranch = one.andThen(two).repeat(Duration.ofSeconds(3))
+//    one.orElse(three).repeat(Duration.ofSeconds(3))
+//    scheduler.scheduleAfter(successBranch, Duration.ZERO)
 
     scheduler.start()
     Thread.sleep(50 * 1000)

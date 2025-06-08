@@ -6,12 +6,11 @@ import java.time.Duration
 
 /**
  * Class for chaining tasks. Note that steps are not copied.
- * Each step may have at most one continuation for success and failure (see [successBranchOverwrite]).
- * One can set continuation for both success and failure (see [bothBranches]).
- * @sample successBranchOverwrite
- * @sample bothBranches
+ * Each [andThen], [orElse] or [repeat] invocation adds an
+ * action after the given step.
+ * @sample exampleTwoAndThen
  */
-class Chain(
+class Chain private constructor(
     val head: TaskName,
     val tail: Task,
 ) {
@@ -29,8 +28,10 @@ class Chain(
         // tail point to same object, update will be registered
     }
 
+
+
     fun andThen(next: Chain, duration: Duration = Duration.ZERO): Chain {
-        tail.successHandler = { taskManager ->
+        tail.successHandlers += { taskManager ->
             // schedule head of next chain
             val now = taskManager.dateTimeService.now()
             taskManager.schedule(next.head, now.plus(duration))
@@ -39,7 +40,7 @@ class Chain(
     }
 
     fun orElse(alt: Chain, duration: Duration = Duration.ZERO): Chain {
-        tail.failureHandler = { taskManager ->
+        tail.failureHandlers += { taskManager ->
             // schedule head of next chain
             val now = taskManager.dateTimeService.now()
             taskManager.schedule(alt.head, now.plus(duration))
@@ -52,19 +53,11 @@ class Chain(
     }
 }
 
-fun successBranchOverwrite() {
+fun exampleTwoAndThen() {
     val one = Chain("stepOne", null){ println("Step one") }
     val two = Chain("stepTwo", null){ println("Step two") }
     val three = Chain("stepThree", null){ println("Step Three") }
     val oneTwo = one.andThen(two)
-    val oneThree = one.andThen(three) // Link one -> two was substituted by one -> three
-}
-
-fun bothBranches() {
-    val one = Chain("stepOne", null){ /* Faulty */ }
-    val two = Chain("stepTwo", null){ println("After successful step one") }
-    val three = Chain("stepThree", null){ println("After failed step one") }
-    val successBranch = one.andThen(two)
-    val failureBranch = one.orElse(three)
-    // schedule either one of successBranch and failureBranch
+    val oneThree = one.andThen(three)
+    // After one, steps two and three will be scheduled
 }
