@@ -34,10 +34,6 @@ fun retryExample(scheduler: Scheduler) {
     }
     // Expected behaviour: Hello one-time world will be written 4 times
     // At moments: right after start, in 2s, in (2+4)s, in (2+4+8)s
-
-    scheduler.start()
-    Thread.sleep(20 * 1000)
-    scheduler.stop()
 }
 
 fun cronExample(scheduler: Scheduler) {
@@ -68,10 +64,6 @@ fun serverExample(scheduler: Scheduler) {
     scheduler.scheduleAfter("task3", Duration.ofSeconds(30)) {
         println("task3 completed")
     }
-
-    scheduler.start()
-//    Thread.sleep(40 * 1000)
-//    scheduler.stop()
 }
 
 fun chainingExample(scheduler: Scheduler) {
@@ -138,7 +130,7 @@ fun main() {
 
     // Scheduler settings
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
+        //.dataSource(source)
         //.launchServer()
         .build()
 
