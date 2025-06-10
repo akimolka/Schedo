@@ -30,7 +30,7 @@ class TaskManager(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
     private val retryRepository: RetryRepository,
-    private val taskResolver: TaskResolver = TaskResolver(),
+    val taskResolver: TaskResolver = TaskResolver(),
     val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
 

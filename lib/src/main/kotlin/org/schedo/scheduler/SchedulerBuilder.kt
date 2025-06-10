@@ -3,6 +3,7 @@ package org.schedo.scheduler
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
+import org.schedo.manager.TaskResolver
 import org.schedo.repository.*
 import org.schedo.repository.inmemory.InMemoryJoin
 import org.schedo.repository.inmemory.InMemoryStatus

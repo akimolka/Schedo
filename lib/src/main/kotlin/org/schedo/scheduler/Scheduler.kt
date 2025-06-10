@@ -17,6 +17,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.time.ExecutionTime
+import org.schedo.manager.TaskResolver
 import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
 import java.util.*
@@ -64,16 +65,10 @@ class Scheduler(
     fun scheduleAt(name: String, moment: OffsetDateTime, func: () -> Unit) =
         scheduleAt(name, moment, null, func)
 
-    fun scheduleAt(name: String, moment: OffsetDateTime, retryPolicy: RetryPolicy?, func: () -> Unit) {
-        val now = dateTimeService.now()
-        if (moment.isBefore(dateTimeService.now())) {
-            logger.warn { "Cannot schedule task '$name' at $moment: time is in the past (now = $now)" }
-        } else {
-            taskManager.schedule(object : OneTimeTask(TaskName(name), retryPolicy) {
-                override fun run() = func()
-            }, moment)
-        }
-    }
+    fun scheduleAt(name: String, moment: OffsetDateTime, retryPolicy: RetryPolicy?, func: () -> Unit) =
+        scheduleAt(object : OneTimeTask(TaskName(name), retryPolicy) {
+            override fun run() = func()
+        }, moment)
 
     fun scheduleAfter(name: String, duration: TemporalAmount, func: () -> Unit) =
         scheduleAfter(name, duration, null, func)
@@ -115,11 +110,35 @@ class Scheduler(
     /**
      * Schedule recurring task [name] that runs with [recurringSchedule] and [retryPolicy].
      */
-    private fun scheduleRecurring(name: String, recurringSchedule: RecurringSchedule,
+    fun scheduleRecurring(name: String, recurringSchedule: RecurringSchedule,
                                   retryPolicy: RetryPolicy?, func: () -> Unit) =
-        taskManager.schedule(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
+        scheduleAt(object : RecurringTask(TaskName(name), recurringSchedule, retryPolicy) {
             override fun run() = func()
         }, recurringSchedule.nextExecution(dateTimeService.now()))
+
+    fun scheduleAfter(task: Task, duration: TemporalAmount) =
+        scheduleAt(task, dateTimeService.now().plus(duration))
+
+    fun scheduleAt(task: Task, moment: OffsetDateTime) {
+        val now = dateTimeService.now()
+        if (moment.isBefore(dateTimeService.now())) {
+            logger.warn { "Task '${task.name.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
+        }
+        taskManager.schedule(task, moment)
+    }
+
+    fun scheduleAfter(chain: Chain, duration: TemporalAmount) =
+        scheduleAt(chain, dateTimeService.now().plus(duration))
+
+    fun scheduleAt(chain: Chain, moment: OffsetDateTime) {
+        val now = dateTimeService.now()
+        if (moment.isBefore(dateTimeService.now())) {
+            logger.warn { "Chain '${chain.head.value}' will be executed immediately. Scheduled time $moment is in the past (now = $now)" }
+        }
+        chain.addToTaskResolver(taskManager.taskResolver)
+        val taskName = chain.head
+        taskManager.schedule(taskName, moment, TaskInstanceID(taskName.value))
+    }
 
     fun start(join: Boolean = false) {
         logger.info{ "Scheduler started" }
