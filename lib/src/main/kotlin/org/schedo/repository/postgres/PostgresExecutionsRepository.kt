@@ -1,13 +1,10 @@
 package org.schedo.repository.postgres
 
 import org.schedo.repository.ExecutionsRepository
-import org.schedo.task.TaskInstanceID
-import org.schedo.task.TaskInstanceName
 import org.schedo.task.TaskName
-import javax.sql.DataSource
 
 class PostgresExecutionsRepository (
-    private val dataSource: DataSource
+    private val transactionManager: DataSourceTransaction
 ) : ExecutionsRepository {
     override fun setRetryCount(task: TaskName, value: Int) {
         val insertSQL = """
@@ -17,13 +14,12 @@ class PostgresExecutionsRepository (
             SET retryCount = ?
         """.trimIndent()
 
-        val rowsInserted = dataSource.connection.use { connection ->
-            connection.prepareStatement(insertSQL).use { pstmt ->
-                pstmt.setString(1, task.value)
-                pstmt.setInt(2, value)
-                pstmt.setInt(3, value)
-                pstmt.executeUpdate()
-            }
+        val connection = transactionManager.getConnection()
+        val rowsInserted = connection.prepareStatement(insertSQL).use { pstmt ->
+            pstmt.setString(1, task.value)
+            pstmt.setInt(2, value)
+            pstmt.setInt(3, value)
+            pstmt.executeUpdate()
         }
     }
 
@@ -34,12 +30,11 @@ class PostgresExecutionsRepository (
             WHERE name = ?
         """.trimIndent()
 
-        return dataSource.connection.use { connection ->
-            connection.prepareStatement(sql).use { pstmt ->
-                pstmt.setInt(1, delta)
-                pstmt.setString(2, task.value)
-                pstmt.executeUpdate()
-            }
+        val connection = transactionManager.getConnection()
+        return connection.prepareStatement(sql).use { pstmt ->
+            pstmt.setInt(1, delta)
+            pstmt.setString(2, task.value)
+            pstmt.executeUpdate()
         }
     }
 
@@ -50,18 +45,16 @@ class PostgresExecutionsRepository (
             WHERE name = ?
         """.trimIndent()
 
-        return dataSource.connection.use { connection ->
-            connection.prepareStatement(sql).use { pstmt ->
-                pstmt.setString(1, task.value)
-                pstmt.executeQuery().use { rs ->
-                    if (rs.next()) {
-                        rs.getInt("retryCount").toUInt()
-                    } else {
-                        0U
-                    }
+        val connection = transactionManager.getConnection()
+        return connection.prepareStatement(sql).use { pstmt ->
+            pstmt.setString(1, task.value)
+            pstmt.executeQuery().use { rs ->
+                if (rs.next()) {
+                    rs.getInt("retryCount").toUInt()
+                } else {
+                    0U
                 }
             }
         }
     }
-
 }
