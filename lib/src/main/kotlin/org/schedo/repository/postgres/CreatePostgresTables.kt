@@ -6,7 +6,7 @@ private fun createTasksTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoTasks (
                 id VARCHAR(255) PRIMARY KEY,
-                name VARCHAR(255),
+                name VARCHAR(255) NOT NULL,
                 time TIMESTAMP WITH TIME ZONE NOT NULL,
                 picked BOOLEAN NOT NULL DEFAULT FALSE
             )
@@ -23,7 +23,7 @@ private fun createStatusTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoStatus (
                 id VARCHAR(255) PRIMARY KEY,
-                status VARCHAR(20),
+                status VARCHAR(20) NOT NULL,
                 scheduledAt TIMESTAMP WITH TIME ZONE NOT NULL,
                 enqueuedAt TIMESTAMP WITH TIME ZONE NULL,
                 startedAt TIMESTAMP WITH TIME ZONE NULL,
@@ -46,7 +46,11 @@ private fun createExecutionTable(dataSource: DataSource) {
     val createTableSQL = """
             CREATE TABLE IF NOT EXISTS SchedoExecutions (
                 name VARCHAR(255) PRIMARY KEY,
-                retryCount INTEGER DEFAULT 0,
+                currentInstance VARCHAR(255) NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                retryCount INTEGER NOT NULL DEFAULT 0,
+                cancelled BOOLEAN NOT NULL DEFAULT FALSE,
+                FOREIGN KEY(currentInstance) REFERENCES SchedoTasks(id),
                 CONSTRAINT retryCount check (retryCount >= 0)
             )
         """.trimIndent()

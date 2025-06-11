@@ -1,6 +1,11 @@
 package org.schedo.repository
 
+import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+
+enum class TaskStatus {
+    RESUMED, RUNNING, FINISHED, CANCELLED
+}
 
 interface ExecutionsRepository {
     fun setRetryCount(task: TaskName, value: Int)
@@ -8,4 +13,31 @@ interface ExecutionsRepository {
     fun addRetryCount(task: TaskName, delta: Int)
     fun increaseRetryCount(task: TaskName) = addRetryCount(task, 1)
     fun getRetryCount(task: TaskName): UInt
+
+    /**
+     * Updates Task status. If update marks Task end (status = COMPLETED or FINISHED) and
+     * currentInstance in SchedoExecutions does not match instanceID, update
+     * is considered outdated and is not applied.
+     */
+    fun updateStatus(task: TaskName, instanceID: TaskInstanceID, status: TaskStatus)
+    fun getStatus(task: TaskName): TaskStatus?
+
+    /**
+     * Cancels future executions of the given task.
+     * @return Whether the action changed the cancelled state.
+     * False if task was already cancelled
+     */
+    fun cancel(task: TaskName): Boolean
+    /**
+     * Clears flag 'cancelled'.
+     * @return Whether the action changed the cancelled state.
+     * False if task was not cancelled.
+     */
+    fun clearCancelled(task: TaskName): Boolean
+    // TODO isCancelled changes the state, rename it
+    fun isCancelled(task: TaskName): Boolean
+
+    /** @return whether action was successful
+    */
+    fun tryResume(task: TaskName): Boolean
 }

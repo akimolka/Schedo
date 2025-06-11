@@ -55,7 +55,7 @@ class SchedoServer(
                     call.respond(taskController.failedTasks())
                 }
                 get("/tasks/{taskName}") {
-                    // What if there is a task "failed"?
+                    // TODO What if there is a task "failed"?
                     val nameParam = call.parameters["taskName"]
                     if (nameParam == null) {
                         call.respond(
@@ -88,6 +88,32 @@ class SchedoServer(
                 }
                 get("/") {
                     call.respondText("Server is healthy", ContentType.Text.Html)
+                }
+
+                post("/tasks/{taskName}/cancel") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    taskController.cancelTask(TaskName(nameParam))
+                }
+
+                post("/tasks/{taskName}/resume") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    taskController.resumeTask(TaskName(nameParam))
                 }
             }
         }.start()

@@ -85,10 +85,10 @@ abstract class Task(
             run()
         }
         onSuccess(taskManager)
-        taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        taskManager.updateTaskStatusFinished(name, id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
         onException(e, taskManager)
-        taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
+        taskManager.updateTaskStatusFinished(name, id, TaskResult.Failed(e))
     }
 }
 

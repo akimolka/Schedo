@@ -113,8 +113,6 @@ fun serverExample2(scheduler: Scheduler) {
             println("Faulty completed, next repeat in 3s")
         }
     }
-
-    scheduler.start()
 }
 
 fun main() {
@@ -131,10 +129,10 @@ fun main() {
     // Scheduler settings
     val scheduler = SchedulerBuilder()
         .dataSource(source)
-        //.launchServer()
+        .launchServer()
         .build()
 
-    retryExample(scheduler)
+    serverExample2(scheduler)
 
     scheduler.start()
 //    Thread.sleep(50 * 1000)

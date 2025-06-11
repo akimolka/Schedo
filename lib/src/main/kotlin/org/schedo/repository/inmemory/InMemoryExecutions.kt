@@ -1,6 +1,8 @@
 package org.schedo.repository.inmemory
 
 import org.schedo.repository.ExecutionsRepository
+import org.schedo.repository.TaskStatus
+import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import java.util.concurrent.ConcurrentHashMap
 
@@ -23,4 +25,27 @@ class InMemoryExecutions : ExecutionsRepository {
     override fun getRetryCount(task: TaskName): UInt =
         (executions[task]?.retryCount ?: 0).toUInt()
 
+    override fun updateStatus(task: TaskName, instanceID: TaskInstanceID, status: TaskStatus) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getStatus(task: TaskName): TaskStatus? {
+        TODO("Not yet implemented")
+    }
+
+    override fun cancel(task: TaskName): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun clearCancelled(task: TaskName): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun isCancelled(task: TaskName): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun tryResume(task: TaskName): Boolean {
+        TODO("Not yet implemented")
+    }
 }

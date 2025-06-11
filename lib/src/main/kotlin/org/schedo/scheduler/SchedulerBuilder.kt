@@ -100,7 +100,8 @@ class SchedulerBuilder {
 
         var server: SchedoServer? = null
         if (launchServer) {
-            val taskController = TaskController(tasksRepository, statusRepository)
+            val taskController = TaskController(tasksRepository, statusRepository,
+                executionsRepository, transactionManager, taskManager)
             server = SchedoServer(serverPort, taskController)
         }
 

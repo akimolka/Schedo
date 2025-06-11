@@ -29,14 +29,15 @@ class TaskManager(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
     private val executionsRepository: ExecutionsRepository,
-    private val transactionManager: TransactionManager,
+    private val tm: TransactionManager,
     val taskResolver: TaskResolver = TaskResolver(),
     val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
 
     fun pickDueNow(): List<TaskInstance> =
-        transactionManager.transaction {
+        tm.transaction {
             tasksRepository.pickTaskInstancesDue(dateTimeService.now())
+                .filterNot { executionsRepository.isCancelled(it.name) }
                 .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
                     it.onEnqueued(id, this)
                     TaskInstance(id, it)
@@ -44,32 +45,29 @@ class TaskManager(
         }
 
     fun updateTaskStatusEnqueued(taskInstanceID: TaskInstanceID) =
-        transactionManager.transaction {
+        tm.transaction {
             statusRepository.updateStatus(Status.ENQUEUED, taskInstanceID, dateTimeService.now())
         }
 
     fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) =
-        transactionManager.transaction {
+        tm.transaction {
             statusRepository.updateStatus(Status.STARTED, taskInstanceID, dateTimeService.now())
         }
 
-    fun updateTaskStatusFinished(taskInstanceID: TaskInstanceID, result: TaskResult) =
-        transactionManager.transaction {
-            when (result) {
-                is TaskResult.Failed -> {
-                    logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
-
-                    val info = AdditionalInfo(
-                        errorMessage = result.e.message ?: "Unknown error",
-                        stackTrace = result.e.stackTraceToString()
-                    )
-                    statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
-                }
-                is TaskResult.Success -> {
-                    statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now())
-                }
-            }
+    fun updateTaskStatusFinished(taskName: TaskName, taskInstanceID: TaskInstanceID, result: TaskResult) {
+        val info = when (result) {
+            is TaskResult.Failed -> AdditionalInfo(
+                    errorMessage = result.e.message ?: "Unknown error",
+                    stackTrace = result.e.stackTraceToString()
+            )
+            is TaskResult.Success -> null
         }
+
+        tm.transaction {
+            statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
+            executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.FINISHED)
+        }
+    }
 
     /**
      * Schedules task with [taskName] to execute at [moment].
@@ -83,11 +81,12 @@ class TaskManager(
         taskName: TaskName, moment: OffsetDateTime,
         isRetry: Boolean = false,
         taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
-        transactionManager.transaction {
+        tm.transaction {
             val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
             if (added) {
                 logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
                 statusRepository.insert(taskInstanceID, moment)
+                executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.RUNNING)
                 if (isRetry) executionsRepository.increaseRetryCount(taskName)
                 else executionsRepository.resetRetryCount(taskName)
             } else {
@@ -115,7 +114,24 @@ class TaskManager(
      * minimum of limit and number of fails after last success is returned.
      */
     fun failedCount(taskName: TaskName, limit: UInt) =
-        transactionManager.transaction {
+        tm.transaction {
             executionsRepository.getRetryCount(taskName)
+        }
+
+    fun resume(taskName: TaskName): Boolean =
+        tm.transaction {
+            val resumed = executionsRepository.tryResume(taskName)
+            if (resumed) {
+                val taskInstanceID = TaskInstanceID(UUID.randomUUID().toString())
+                val moment = dateTimeService.now()
+                tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
+                logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
+                statusRepository.insert(taskInstanceID, moment)
+                executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.RUNNING)
+                executionsRepository.resetRetryCount(taskName)
+                true
+            } else {
+                false
+            }
         }
 }

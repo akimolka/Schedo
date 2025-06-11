@@ -1,8 +1,8 @@
 package org.schedo.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
+import org.schedo.manager.TaskManager
 import org.schedo.repository.*
-import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
 import org.schedo.util.KOffsetDateTimeSerializer
 import java.time.OffsetDateTime
@@ -28,17 +28,24 @@ class TaskInfo (
 class TaskController(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
+    private val executionsRepository: ExecutionsRepository,
+    private val tm: TransactionManager,
+    private val taskManager: TaskManager, // TODO
 ) {
-    fun countScheduledTasks(due: OffsetDateTime): Int {
-        return tasksRepository.countTaskInstancesDue(due)
-    }
+    fun countScheduledTasks(due: OffsetDateTime): Int =
+        tm.transaction {
+            tasksRepository.countTaskInstancesDue(due)
+        }
 
-    fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> {
-        return tasksRepository.listTaskInstancesDue(due).sortedBy { it.executionTime }
-    }
+    fun scheduledTasks(due: OffsetDateTime = OffsetDateTime.MAX): List<ScheduledTaskInstance> =
+        tm.transaction {
+            tasksRepository.listTaskInstancesDue(due).sortedBy { it.executionTime }
+        }
 
     fun failedTasks(): List<FailedTaskInfo> {
-        val allFinished = statusRepository.finishedTasks()
+        val allFinished = tm.transaction {
+            statusRepository.finishedTasks()
+        }
 
         val saneFinished = allFinished.filter {
             when (it.status) {
@@ -76,14 +83,15 @@ class TaskController(
             .sortedByDescending { it.lastFailure }
     }
 
-    fun taskHistory(taskName: TaskName): List<StatusEntry> {
-        return statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt }
-    }
+    fun taskHistory(taskName: TaskName): List<StatusEntry> =
+        tm.transaction {
+            statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt }
+        }
 
     fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<TaskInfo> {
         // TODO How to use status?
         return if (taskName == null) {
-            statusRepository.history(from, to)
+            tm.transaction { statusRepository.history(from, to) }
                 .groupBy { it.first }
                 .map { (name, pairs) ->
                     val entries: List<StatusEntry> = pairs.map { it.second }
@@ -110,17 +118,12 @@ class TaskController(
         )
     }
 
-    fun finishedTasks(): List<TaskInstanceID /*TaskName, finishedAt, additional info*/> {
-        // In additional info include time of execution: finishedAt - startedAt
-        // And error if failed: add error field to Status Table?
-        return emptyList()
-    }
+    /**
+     * @return whether action was successful
+     */
+    fun resumeTask(task: TaskName): Boolean =
+        taskManager.resume(task)
 
-    fun rescheduleTask(task: TaskName) {
-        // Button to reschedule finished task
-    }
-
-    fun cancelTask(task: TaskName) {
-        // no such feature yet
-    }
+    fun cancelTask(task: TaskName): Boolean =
+        tm.transaction { executionsRepository.cancel(task) }
 }
