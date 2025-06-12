@@ -20,7 +20,6 @@ interface ExecutionsRepository {
      * is considered outdated and is not applied.
      */
     fun updateStatus(task: TaskName, instanceID: TaskInstanceID, status: TaskStatus)
-    fun getStatus(task: TaskName): TaskStatus?
 
     /**
      * Cancels future executions of the given task.
@@ -40,4 +39,6 @@ interface ExecutionsRepository {
     /** @return whether action was successful
     */
     fun tryResume(task: TaskName): Boolean
+
+    fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>?
 }

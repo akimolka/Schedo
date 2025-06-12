@@ -65,10 +65,10 @@ class SchedoServer(
                         return@get
                     }
 
-                    val history: List<StatusEntry> =
-                        taskController.taskHistory(TaskName(nameParam))
+                    val detailedTaskInfo = taskController.taskHistory(TaskName(nameParam))
 
-                    if (history.isEmpty()) {
+                    if (detailedTaskInfo.history.isEmpty()) {
+                        // TODO guarantee that two other field are not empty
                         call.respond(
                             HttpStatusCode.NotFound,
                             "No task named '$nameParam'"
@@ -76,7 +76,7 @@ class SchedoServer(
                         return@get
                     }
 
-                    call.respond(history)
+                    call.respond(detailedTaskInfo)
                 }
                 get("/tasks") {
                     val from = call.parseTime("from", OffsetDateTime.MIN) ?: return@get
@@ -100,7 +100,13 @@ class SchedoServer(
                         return@post
                     }
 
-                    taskController.cancelTask(TaskName(nameParam))
+                    val success = taskController.cancelTask(TaskName(nameParam))
+
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, "Cancelled")
+                    } else {
+                        call.respond(HttpStatusCode.Conflict, "Task is already finished or cancelled")
+                    }
                 }
 
                 post("/tasks/{taskName}/resume") {
@@ -113,7 +119,13 @@ class SchedoServer(
                         return@post
                     }
 
-                    taskController.resumeTask(TaskName(nameParam))
+                    val success = taskController.resumeTask(TaskName(nameParam))
+
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, "Resumed")
+                    } else {
+                        call.respond(HttpStatusCode.Conflict, "Task is already running or resumed")
+                    }
                 }
             }
         }.start()

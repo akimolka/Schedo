@@ -18,11 +18,18 @@ class FailedTaskInfo (
 )
 
 @Serializable
-class TaskInfo (
+class AggrTaskInfo (
     val name: TaskName,
     val successCount: Int,
     val failureCount: Int,
     val lastExecutionTime: @Serializable(KOffsetDateTimeSerializer::class) OffsetDateTime?,
+)
+
+@Serializable
+class DetailedTaskInfo (
+    val history: List<StatusEntry>,
+    val executionStatus: TaskStatus?,
+    val isCancelled: Boolean?,
 )
 
 class TaskController(
@@ -83,12 +90,17 @@ class TaskController(
             .sortedByDescending { it.lastFailure }
     }
 
-    fun taskHistory(taskName: TaskName): List<StatusEntry> =
+    fun taskHistory(taskName: TaskName): DetailedTaskInfo =
         tm.transaction {
-            statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt }
+            val statusAndCancelled = executionsRepository.getStatusAndCancelled(taskName)
+            DetailedTaskInfo(
+                history = statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt },
+                executionStatus = statusAndCancelled?.first,
+                isCancelled = statusAndCancelled?.second,
+            )
         }
 
-    fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<TaskInfo> {
+    fun tasks(from: OffsetDateTime, to: OffsetDateTime, taskName: TaskName?, status: Status?): List<AggrTaskInfo> {
         // TODO How to use status?
         return if (taskName == null) {
             tm.transaction { statusRepository.history(from, to) }
@@ -102,7 +114,7 @@ class TaskController(
         }
     }
 
-    private fun collectTaskInfo(taskName: TaskName, taskEntries: List<StatusEntry>): TaskInfo {
+    private fun collectTaskInfo(taskName: TaskName, taskEntries: List<StatusEntry>): AggrTaskInfo {
         val successCount = taskEntries.count { it.status == Status.COMPLETED }
         val failureCount = taskEntries.count { it.status == Status.FAILED }
 
@@ -110,7 +122,7 @@ class TaskController(
             .mapNotNull { it.finishedAt }
             .maxOrNull()
 
-        return TaskInfo(
+        return AggrTaskInfo(
             name              = taskName,
             successCount      = successCount,
             failureCount      = failureCount,

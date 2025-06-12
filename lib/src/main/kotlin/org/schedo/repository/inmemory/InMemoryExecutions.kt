@@ -29,10 +29,6 @@ class InMemoryExecutions : ExecutionsRepository {
         TODO("Not yet implemented")
     }
 
-    override fun getStatus(task: TaskName): TaskStatus? {
-        TODO("Not yet implemented")
-    }
-
     override fun cancel(task: TaskName): Boolean {
         TODO("Not yet implemented")
     }
@@ -46,6 +42,10 @@ class InMemoryExecutions : ExecutionsRepository {
     }
 
     override fun tryResume(task: TaskName): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>? {
         TODO("Not yet implemented")
     }
 }

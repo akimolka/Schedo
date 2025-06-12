@@ -98,18 +98,6 @@ class PostgresExecutionsRepository (
         }
     }
 
-    override fun getStatus(task: TaskName): TaskStatus? {
-        val sql = "SELECT status FROM SchedoExecutions WHERE name = ?"
-        val conn = transactionManager.getConnection()
-
-        return conn.prepareStatement(sql).use { pstmt ->
-            pstmt.setString(1, task.value)
-            pstmt.executeQuery().use { rs ->
-                if (rs.next()) TaskStatus.valueOf(rs.getString("status")) else null
-            }
-        }
-    }
-
     override fun cancel(task: TaskName): Boolean {
         val sql = """
             UPDATE SchedoExecutions
@@ -171,6 +159,25 @@ class PostgresExecutionsRepository (
             pstmt.setString(1, task.value)
             val updatedRows = pstmt.executeUpdate()
             return updatedRows > 0
+        }
+    }
+
+    override fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>? {
+        val sql = "SELECT status, cancelled FROM SchedoExecutions WHERE name = ?"
+        val conn = transactionManager.getConnection()
+
+        return conn.prepareStatement(sql).use { pstmt ->
+            pstmt.setString(1, task.value)
+            pstmt.executeQuery().use { rs ->
+                if (rs.next()){
+                    Pair(
+                        TaskStatus.valueOf(rs.getString("status")),
+                        rs.getBoolean("cancelled")
+                    )
+                } else {
+                    null
+                }
+            }
         }
     }
 }
