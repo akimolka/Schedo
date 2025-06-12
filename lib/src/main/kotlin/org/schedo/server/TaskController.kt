@@ -94,7 +94,7 @@ class TaskController(
         tm.transaction {
             val statusAndCancelled = executionsRepository.getStatusAndCancelled(taskName)
             DetailedTaskInfo(
-                history = statusRepository.taskHistory(taskName).sortedByDescending { it.scheduledAt },
+                history = statusRepository.taskHistory(taskName).sortedByDescending { it.createdAt },
                 executionStatus = statusAndCancelled?.first,
                 isCancelled = statusAndCancelled?.second,
             )

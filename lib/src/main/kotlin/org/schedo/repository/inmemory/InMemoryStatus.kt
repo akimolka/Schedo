@@ -14,8 +14,8 @@ class InMemoryStatus(
 ) : StatusRepository {
     private val statuses = ConcurrentHashMap<TaskInstanceID, StatusEntry>()
 
-    override fun insert(instance: TaskInstanceID, moment: OffsetDateTime) {
-        statuses[instance] = StatusEntry(instance, Status.SCHEDULED, moment)
+    override fun insert(instance: TaskInstanceID, scheduledFor: OffsetDateTime, createdAt: OffsetDateTime) {
+        statuses[instance] = StatusEntry(instance, Status.SCHEDULED, scheduledFor, createdAt)
     }
 
     override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
@@ -55,13 +55,13 @@ class InMemoryStatus(
 
         return instances
             .mapNotNull { instanceId -> statuses[instanceId] }
-            .filter { it.scheduledAt in from..to }
+            .filter { it.scheduledFor in from..to }
     }
 
     override fun history(from: OffsetDateTime, to: OffsetDateTime): List<Pair<TaskName, StatusEntry>> {
         return statuses.values
             .asSequence()
-            .filter { it.scheduledAt in from..to }
+            .filter { it.scheduledFor in from..to }
             .mapNotNull { entry ->
                 val taskName = inMemoryJoin.taskName(entry.instance)
                 if (taskName != null) {

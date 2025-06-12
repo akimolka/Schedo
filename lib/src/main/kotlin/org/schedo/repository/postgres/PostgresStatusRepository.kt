@@ -13,10 +13,10 @@ class PostgresStatusRepository (
 ) : StatusRepository {
     private val json = Json { prettyPrint = false; encodeDefaults = true }
 
-    override fun insert(instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun insert(instance: TaskInstanceID, scheduledFor: OffsetDateTime, createdAt: OffsetDateTime) {
         val insertSQL = """
-            INSERT INTO SchedoStatus (id, status, scheduledAt)
-            VALUES(?, ?, ?)
+            INSERT INTO SchedoStatus (id, status, scheduledFor, createdAt)
+            VALUES(?, ?, ?, ?)
             ON CONFLICT (id) DO NOTHING
         """.trimIndent()
 
@@ -24,14 +24,15 @@ class PostgresStatusRepository (
         connection.prepareStatement(insertSQL).use { pstmt ->
             pstmt.setString(1, instance.value)
             pstmt.setString(2, Status.SCHEDULED.name)
-            pstmt.setObject(3, moment)
+            pstmt.setObject(3, scheduledFor)
+            pstmt.setObject(4, createdAt)
             pstmt.executeUpdate()
         }
     }
 
     override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
         val timeColumn = when (status) {
-            Status.SCHEDULED -> "scheduledAt"
+            Status.SCHEDULED -> "createdAt"
             Status.ENQUEUED  -> "enqueuedAt"
             Status.STARTED   -> "startedAt"
             Status.COMPLETED, Status.FAILED, Status.CANCELLED -> "finishedAt"
@@ -145,8 +146,8 @@ class PostgresStatusRepository (
             SELECT *
             FROM SchedoStatus
               JOIN ids USING (id)
-            WHERE ? <= scheduledAt AND scheduledAt <= ?
-            ORDER BY scheduledAt DESC
+            WHERE ? <= scheduledFor AND scheduledFor <= ?
+            ORDER BY createdAt DESC
         """.trimIndent()
 
         val connection = transactionManager.getConnection()
@@ -173,8 +174,8 @@ class PostgresStatusRepository (
             SELECT *
             FROM SchedoStatus
               JOIN names USING (id)
-            WHERE ? <= scheduledAt AND scheduledAt <= ?
-            ORDER BY scheduledAt DESC
+            WHERE ? <= scheduledFor AND scheduledFor <= ?
+            ORDER BY createdAt DESC
         """.trimIndent()
 
         val connection = transactionManager.getConnection()
@@ -204,7 +205,8 @@ class PostgresStatusRepository (
         return StatusEntry(
             instance = TaskInstanceID(rs.getString("id")),
             status = Status.valueOf(rs.getString("status")),
-            scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            scheduledFor = rs.getObject("scheduledFor", OffsetDateTime::class.java),
+            createdAt = rs.getObject("createdAt", OffsetDateTime::class.java),
             enqueuedAt = rs.getObject("enqueuedAt", OffsetDateTime::class.java),
             startedAt = rs.getObject("startedAt", OffsetDateTime::class.java),
             finishedAt = rs.getObject("finishedAt", OffsetDateTime::class.java),

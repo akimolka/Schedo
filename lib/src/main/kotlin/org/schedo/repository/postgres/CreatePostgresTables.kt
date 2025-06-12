@@ -24,7 +24,8 @@ private fun createStatusTable(dataSource: DataSource) {
             CREATE TABLE IF NOT EXISTS SchedoStatus (
                 id VARCHAR(255) PRIMARY KEY,
                 status VARCHAR(20) NOT NULL,
-                scheduledAt TIMESTAMP WITH TIME ZONE NOT NULL,
+                scheduledFor TIMESTAMP WITH TIME ZONE NOT NULL,
+                createdAt TIMESTAMP WITH TIME ZONE NOT NULL,
                 enqueuedAt TIMESTAMP WITH TIME ZONE NULL,
                 startedAt TIMESTAMP WITH TIME ZONE NULL,
                 finishedAt TIMESTAMP WITH TIME ZONE NULL,

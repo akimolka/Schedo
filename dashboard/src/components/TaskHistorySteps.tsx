@@ -35,6 +35,10 @@ function formatDescription(timestamp?: string) {
     </div>)
 }
 
+function createdTitle(scheduledFor?: string) {
+    return 'Scheduled for ' + formatTimestamp(scheduledFor)
+}
+
 const getFinishedIcon = ({entry}: { entry: StatusEntry }) => {
     if (!entry.finishedAt) return null
     if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a"/>
@@ -46,7 +50,7 @@ function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
   if (entry.status == 'CANCELLED') return StepsCancelled({entry})
 
   const steps = [
-    { title: 'Scheduled', time: entry.scheduledAt },
+    { title: createdTitle(entry.scheduledFor), time: entry.createdAt },
     { title: 'Enqueued', time: entry.enqueuedAt },
     { title: 'Started', time: entry.startedAt },
     { title: 'Finished', time: entry.finishedAt }
@@ -74,7 +78,7 @@ function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
 
 function StepsCancelled({ entry }: { entry: StatusEntry }) {
     const steps = [
-        { title: 'Scheduled', time: entry.scheduledAt },
+        { title: createdTitle(entry.scheduledFor), time: entry.createdAt },
         { title: 'Cancelled', time: entry.finishedAt }
     ]
 

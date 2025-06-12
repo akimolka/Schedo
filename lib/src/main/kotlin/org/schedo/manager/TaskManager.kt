@@ -92,7 +92,7 @@ class TaskManager(
             val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
             if (added) {
                 logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-                statusRepository.insert(taskInstanceID, moment)
+                statusRepository.insert(taskInstanceID, moment, dateTimeService.now())
                 executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.RUNNING)
                 if (isRetry) executionsRepository.increaseRetryCount(taskName)
                 else executionsRepository.resetRetryCount(taskName)
@@ -130,10 +130,10 @@ class TaskManager(
             val resumed = executionsRepository.tryResume(taskName)
             if (resumed) {
                 val taskInstanceID = TaskInstanceID(UUID.randomUUID().toString())
-                val moment = dateTimeService.now()
-                tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
-                logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-                statusRepository.insert(taskInstanceID, moment)
+                val now = dateTimeService.now()
+                tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, now))
+                logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $now"}
+                statusRepository.insert(taskInstanceID, now, now)
                 executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.RUNNING)
                 executionsRepository.resetRetryCount(taskName)
                 true

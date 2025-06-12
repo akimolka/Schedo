@@ -37,7 +37,8 @@ class FinishedTask(
 data class StatusEntry(
     val instance: TaskInstanceID,
     val status: Status,
-    @Serializable(KOffsetDateTimeSerializer::class) val scheduledAt: OffsetDateTime,
+    @Serializable(KOffsetDateTimeSerializer::class) val scheduledFor: OffsetDateTime,
+    @Serializable(KOffsetDateTimeSerializer::class) val createdAt: OffsetDateTime,
     @Serializable(KOffsetDateTimeSerializer::class) val enqueuedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val startedAt: OffsetDateTime? = null,
     @Serializable(KOffsetDateTimeSerializer::class) val finishedAt: OffsetDateTime? = null,
@@ -46,7 +47,7 @@ data class StatusEntry(
 
 
 interface StatusRepository {
-    fun insert(instance: TaskInstanceID, moment: OffsetDateTime)
+    fun insert(instance: TaskInstanceID, scheduledFor: OffsetDateTime, createdAt: OffsetDateTime)
     fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime,
                      info: AdditionalInfo? = null)
     fun finishedTasks(): List<FinishedTask>
