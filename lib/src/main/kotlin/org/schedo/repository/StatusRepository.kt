@@ -7,7 +7,7 @@ import org.schedo.util.KOffsetDateTimeSerializer
 import java.time.OffsetDateTime
 
 enum class Status {
-    SCHEDULED, ENQUEUED, STARTED, COMPLETED, FAILED
+    SCHEDULED, ENQUEUED, STARTED, COMPLETED, FAILED, CANCELLED
 }
 
 @Serializable

@@ -8,6 +8,8 @@ import org.schedo.repository.*
 import org.schedo.repository.inmemory.*
 import org.schedo.repository.postgres.*
 import org.schedo.server.SchedoServer
+import org.schedo.util.DateTimeService
+import org.schedo.util.DefaultDateTimeService
 import org.schedo.waiter.Waiter
 import java.util.concurrent.Executors
 import javax.sql.DataSource
@@ -96,7 +98,10 @@ class SchedulerBuilder {
             is DataSourceType.Other ->
                 error("${dsType.name} is not supported")
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository, executionsRepository, transactionManager)
+
+        val dateTimeService: DateTimeService = DefaultDateTimeService()
+        val taskManager = TaskManager(tasksRepository, statusRepository, executionsRepository,
+            transactionManager, TaskResolver(), dateTimeService)
 
         var server: SchedoServer? = null
         if (launchServer) {
@@ -112,6 +117,6 @@ class SchedulerBuilder {
                 "\tdataSourceType: $dataSourceType\n" +
                 "\texecutionThreadsCount: $executionThreadsCount"}
 
-        return Scheduler(taskManager, server, waiter, executor)
+        return Scheduler(taskManager, server, waiter, executor, dateTimeService)
     }
 }

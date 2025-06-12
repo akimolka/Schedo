@@ -4,6 +4,7 @@ import org.schedo.repository.ExecutionsRepository
 import org.schedo.repository.TaskStatus
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.time.OffsetDateTime
 
 class PostgresExecutionsRepository (
     private val transactionManager: DataSourceTransaction
@@ -98,16 +99,17 @@ class PostgresExecutionsRepository (
         }
     }
 
-    override fun cancel(task: TaskName): Boolean {
+    override fun cancel(task: TaskName, moment: OffsetDateTime): Boolean {
         val sql = """
             UPDATE SchedoExecutions
-            SET cancelled = TRUE
+            SET cancelled = TRUE, cancelledAt = ?
             WHERE name = ? AND cancelled <> TRUE
         """.trimIndent()
 
         val conn = transactionManager.getConnection()
         return conn.prepareStatement(sql).use { pstmt ->
-            pstmt.setString(1, task.value)
+            pstmt.setObject(1, moment)
+            pstmt.setString(2, task.value)
             pstmt.executeUpdate() > 0
         }
     }
@@ -115,7 +117,7 @@ class PostgresExecutionsRepository (
     override fun clearCancelled(task: TaskName): Boolean {
         val sql = """
             UPDATE SchedoExecutions
-            SET cancelled = FALSE
+            SET cancelled = FALSE, cancelledAt = NULL
             WHERE name = ? AND cancelled <> FALSE
         """.trimIndent()
 
@@ -126,19 +128,23 @@ class PostgresExecutionsRepository (
         }
     }
 
-    override fun isCancelled(task: TaskName): Boolean {
+    override fun whenCancelled(task: TaskName): OffsetDateTime? {
         val sql = """
             UPDATE SchedoExecutions
             SET status = 'CANCELLED'
             WHERE name = ? AND cancelled = true
-            RETURNING cancelled
+            RETURNING cancelledAt
         """.trimIndent()
 
         val conn = transactionManager.getConnection()
         conn.prepareStatement(sql).use { pstmt ->
             pstmt.setString(1, task.value)
             pstmt.executeQuery().use { rs ->
-                return rs.next() && rs.getBoolean("cancelled")
+                return if (rs.next()) {
+                    rs.getObject("cancelledAt", OffsetDateTime::class.java)
+                } else {
+                    null
+                }
             }
         }
     }

@@ -37,11 +37,18 @@ class TaskManager(
     fun pickDueNow(): List<TaskInstance> =
         tm.transaction {
             tasksRepository.pickTaskInstancesDue(dateTimeService.now())
-                .filterNot { executionsRepository.isCancelled(it.name) }
-                .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
-                    it.onEnqueued(id, this)
-                    TaskInstance(id, it)
-                } }
+                .mapNotNull { (id, name) ->
+                    val cancelMoment = executionsRepository.whenCancelled(name)
+                    if (cancelMoment != null) {
+                        statusRepository.updateStatus(Status.CANCELLED, id, cancelMoment)
+                        null
+                    } else {
+                        taskResolver.getTask(name)?.let {
+                            it.onEnqueued(id, this)
+                            TaskInstance(id, it)
+                        }
+                    }
+                }
         }
 
     fun updateTaskStatusEnqueued(taskInstanceID: TaskInstanceID) =

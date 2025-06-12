@@ -130,6 +130,7 @@ fun main() {
     val scheduler = SchedulerBuilder()
         .dataSource(source)
         .launchServer()
+        .executionThreads(2)
         .build()
 
     serverExample2(scheduler)

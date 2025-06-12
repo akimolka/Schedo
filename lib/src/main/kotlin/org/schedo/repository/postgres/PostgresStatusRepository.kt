@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import org.schedo.repository.*
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.sql.Connection
 import java.sql.ResultSet
 import java.time.OffsetDateTime
 
@@ -33,7 +34,7 @@ class PostgresStatusRepository (
             Status.SCHEDULED -> "scheduledAt"
             Status.ENQUEUED  -> "enqueuedAt"
             Status.STARTED   -> "startedAt"
-            Status.COMPLETED, Status.FAILED    -> "finishedAt"
+            Status.COMPLETED, Status.FAILED, Status.CANCELLED -> "finishedAt"
         }
 
         // Entry associated with this instance won't be changed by other servers
@@ -74,8 +75,6 @@ class PostgresStatusRepository (
                     }
                 }
             }
-
-            // merge and encode
             mergeInfo(prevInfo, info)
                 ?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
         } else {

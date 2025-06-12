@@ -4,6 +4,7 @@ import org.schedo.repository.ExecutionsRepository
 import org.schedo.repository.TaskStatus
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.time.OffsetDateTime
 import java.util.concurrent.ConcurrentHashMap
 
 data class ExecutionEntry(
@@ -29,7 +30,7 @@ class InMemoryExecutions : ExecutionsRepository {
         TODO("Not yet implemented")
     }
 
-    override fun cancel(task: TaskName): Boolean {
+    override fun cancel(task: TaskName, moment: OffsetDateTime): Boolean {
         TODO("Not yet implemented")
     }
 
@@ -37,7 +38,7 @@ class InMemoryExecutions : ExecutionsRepository {
         TODO("Not yet implemented")
     }
 
-    override fun isCancelled(task: TaskName): Boolean {
+    override fun whenCancelled(task: TaskName): OffsetDateTime? {
         TODO("Not yet implemented")
     }
 

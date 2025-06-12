@@ -2,6 +2,7 @@ package org.schedo.repository
 
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.time.OffsetDateTime
 
 enum class TaskStatus {
     RESUMED, RUNNING, FINISHED, CANCELLED
@@ -26,15 +27,14 @@ interface ExecutionsRepository {
      * @return Whether the action changed the cancelled state.
      * False if task was already cancelled
      */
-    fun cancel(task: TaskName): Boolean
+    fun cancel(task: TaskName, moment: OffsetDateTime): Boolean
     /**
      * Clears flag 'cancelled'.
      * @return Whether the action changed the cancelled state.
      * False if task was not cancelled.
      */
     fun clearCancelled(task: TaskName): Boolean
-    // TODO isCancelled changes the state, rename it
-    fun isCancelled(task: TaskName): Boolean
+    fun whenCancelled(task: TaskName): OffsetDateTime?
 
     /** @return whether action was successful
     */

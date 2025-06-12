@@ -1,5 +1,5 @@
 import { Steps } from 'antd'
-import { CheckCircleTwoTone, CloseCircleTwoTone, QuestionCircleTwoTone } from '@ant-design/icons'
+import { CheckCircleTwoTone, CloseCircleTwoTone, QuestionCircleTwoTone, StopTwoTone } from '@ant-design/icons'
 import type { StatusEntry } from './TaskHistoryTable.tsx'
 
 function formatTimestamp(timestamp?: string): string {
@@ -23,14 +23,28 @@ function formatTimestamp(timestamp?: string): string {
     return `${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`
 }
 
-const getFinishedIcon = ({ entry }: { entry: StatusEntry }) => {
+function formatDescription(timestamp?: string) {
+    return (<div style={{
+        width: '100px',
+        textAlign: 'left',
+        padding: '0 auto',
+        margin: '0 auto',
+        whiteSpace: 'pre-wrap'
+    }}>
+        {formatTimestamp(timestamp)}
+    </div>)
+}
+
+const getFinishedIcon = ({entry}: { entry: StatusEntry }) => {
     if (!entry.finishedAt) return null
-    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a" />
-    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f" />
-    return <QuestionCircleTwoTone twoToneColor="#d9d9d9" />
+    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a"/>
+    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f"/>
+    return <QuestionCircleTwoTone twoToneColor="#d9d9d9"/>
 }
 
 function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
+  if (entry.status == 'CANCELLED') return StepsCancelled({entry})
+
   const steps = [
     { title: 'Scheduled', time: entry.scheduledAt },
     { title: 'Enqueued', time: entry.enqueuedAt },
@@ -50,23 +64,33 @@ function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
       items={steps.map((step, index) => {
           return {
               title: step.title,
-              description: (
-                  <div style={{
-                      width: '100px',
-                      textAlign: 'left',
-                      padding: '0 auto',
-                      margin: '0 auto',
-                      whiteSpace: 'pre-wrap'
-                  }}>
-                      {formatTimestamp(step.time)}
-                  </div>
-              ),
-
+              description: formatDescription(step.time),
               icon: index === 3 ? getFinishedIcon({entry}) : undefined
           }
       })}
     />
   )
+}
+
+function StepsCancelled({ entry }: { entry: StatusEntry }) {
+    const steps = [
+        { title: 'Scheduled', time: entry.scheduledAt },
+        { title: 'Cancelled', time: entry.finishedAt }
+    ]
+
+    return (
+        <Steps
+            size="small"
+            current={1}
+            items={steps.map((step, index) => {
+                return {
+                    title: step.title,
+                    description: formatDescription(step.time),
+                    icon: index === 1 ? <StopTwoTone twoToneColor="#ff4d4f"/> : undefined
+                }
+            })}
+        />
+    )
 }
 
 export default TaskHistorySteps

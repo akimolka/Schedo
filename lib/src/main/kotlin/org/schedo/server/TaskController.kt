@@ -136,6 +136,8 @@ class TaskController(
     fun resumeTask(task: TaskName): Boolean =
         taskManager.resume(task)
 
-    fun cancelTask(task: TaskName): Boolean =
-        tm.transaction { executionsRepository.cancel(task) }
+    fun cancelTask(task: TaskName): Boolean {
+        val now = taskManager.dateTimeService.now()
+        return tm.transaction { executionsRepository.cancel(task, now) }
+    }
 }

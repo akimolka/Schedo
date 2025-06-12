@@ -50,6 +50,7 @@ private fun createExecutionTable(dataSource: DataSource) {
                 status VARCHAR(20) NOT NULL,
                 retryCount INTEGER NOT NULL DEFAULT 0,
                 cancelled BOOLEAN NOT NULL DEFAULT FALSE,
+                cancelledAt TIMESTAMP WITH TIME ZONE NULL,
                 FOREIGN KEY(currentInstance) REFERENCES SchedoTasks(id),
                 CONSTRAINT retryCount check (retryCount >= 0)
             )

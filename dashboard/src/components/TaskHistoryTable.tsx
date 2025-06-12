@@ -5,7 +5,7 @@ import TaskHistorySteps from '../components/TaskHistorySteps'
 
 export type StatusEntry = {
     instance: string,
-    status: 'SCHEDULED' | 'ENQUEUED' | 'STARTED' | 'COMPLETED' | 'FAILED',
+    status: 'SCHEDULED' | 'ENQUEUED' | 'STARTED' | 'COMPLETED' | 'FAILED' | 'CANCELLED',
     scheduledAt?: string,
     enqueuedAt?: string,
     startedAt?: string,
