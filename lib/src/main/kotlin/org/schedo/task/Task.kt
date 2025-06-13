@@ -75,10 +75,6 @@ abstract class Task(
         failureHandlers.forEach{ it(taskManager) }
     }
 
-    fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
-        taskManager.updateTaskStatusEnqueued(id)
-    }
-
     fun exec(id: TaskInstanceID, taskManager: TaskManager) = try {
         taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {

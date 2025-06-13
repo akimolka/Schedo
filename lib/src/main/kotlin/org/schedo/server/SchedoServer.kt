@@ -126,6 +126,20 @@ class SchedoServer(
                         call.respond(HttpStatusCode.Conflict, "Task is already running or resumed")
                     }
                 }
+
+                post("/tasks/{taskName}/forceResume") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    taskController.forceResumeTask(TaskName(nameParam))
+                    call.respond(HttpStatusCode.OK, "ForceResumed")
+                }
             }
         }.start()
     }

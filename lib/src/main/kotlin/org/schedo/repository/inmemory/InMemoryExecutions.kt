@@ -94,6 +94,12 @@ class InMemoryExecutions : ExecutionsRepository {
         return resumed
     }
 
+    override fun forceResume(task: TaskName) {
+        executions.computeIfPresent(task){ _, value ->
+            value.copy(status = TaskStatus.RESUMED, cancelled = false)
+        }
+    }
+
     override fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>? {
         val execution = executions[task] ?: return null
         return Pair(execution.status, execution.cancelled)

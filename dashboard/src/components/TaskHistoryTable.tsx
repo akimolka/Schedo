@@ -141,7 +141,28 @@ function TaskHistoryTable() {
         }
     }
 
+    const handleForceResume = async () => {
+        if (!taskName) return
+
+        try {
+            const response = await fetch(`http://localhost:8080/tasks/${taskName}/forceResume`, {
+                method: 'POST'
+            })
+
+            if (response.ok) {
+                message.success('Task force rescheduled successfully')
+                fetchDetails()
+            } else {
+                message.error('Failed to force reschedule task')
+            }
+        } catch (error) {
+            message.error('Error force rescheduling task')
+        }
+    }
+
     const historyEntries: StatusEntry[] = detailedInfo?.history ?? []
+    const canResumeFlag = canResume(detailedInfo)
+    const buttonWidth = 150  // Fixed width for consistent sizing
 
     return (
         <>
@@ -151,16 +172,30 @@ function TaskHistoryTable() {
                     danger
                     disabled={!canCancel(detailedInfo) || loading}
                     onClick={handleCancel}
+                    style={{ width: buttonWidth }}
                 >
                     Cancel
                 </Button>
-                <Button
-                    type="default"
-                    disabled={!canResume(detailedInfo) || loading}
-                    onClick={handleResume}
-                >
-                    Reschedule
-                </Button>
+                {canResumeFlag ? (
+                    <Button
+                        type="default"
+                        disabled={loading}
+                        onClick={handleResume}
+                        style={{ width: buttonWidth }}
+                    >
+                        Reschedule
+                    </Button>
+                ) : (
+                    <Button
+                        type="default"
+                        danger
+                        disabled={loading}
+                        onClick={handleForceResume}
+                        style={{ width: buttonWidth }}
+                    >
+                        Force Reschedule
+                    </Button>
+                )}
             </Space>
             <Table
                 dataSource={historyEntries}

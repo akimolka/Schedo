@@ -159,6 +159,20 @@ class PostgresExecutionsRepository (
         }
     }
 
+    override fun forceResume(task: TaskName) {
+        val sql = """
+            UPDATE SchedoExecutions
+            SET status = 'RESUMED', cancelled = false
+            WHERE name = ?
+        """.trimIndent()
+
+        val conn = transactionManager.getConnection()
+        conn.prepareStatement(sql).use { pstmt ->
+            pstmt.setString(1, task.value)
+            pstmt.executeUpdate()
+        }
+    }
+
     override fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>? {
         val sql = "SELECT status, cancelled FROM SchedoExecutions WHERE name = ?"
         val conn = transactionManager.getConnection()

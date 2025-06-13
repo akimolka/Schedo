@@ -34,6 +34,7 @@ interface ExecutionsRepository {
     /** @return whether action was successful
     */
     fun tryResume(task: TaskName): Boolean
+    fun forceResume(task: TaskName)
 
     fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>?
 }
