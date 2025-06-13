@@ -128,7 +128,7 @@ fun main() {
 
     // Scheduler settings
     val scheduler = SchedulerBuilder()
-        //.dataSource(source)
+        .dataSource(source)
         .launchServer()
         .executionThreads(2)
         .build()

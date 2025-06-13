@@ -68,7 +68,6 @@ class SchedoServer(
                     val detailedTaskInfo = taskController.taskHistory(TaskName(nameParam))
 
                     if (detailedTaskInfo.history.isEmpty()) {
-                        // TODO guarantee that two other field are not empty
                         call.respond(
                             HttpStatusCode.NotFound,
                             "No task named '$nameParam'"
