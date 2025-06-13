@@ -29,7 +29,7 @@ class Scheduler(
     private val taskManager: TaskManager,
     private val server: SchedoServer?,
     private val waiter: Waiter,
-    private val executor: ExecutorService = Executors.newCachedThreadPool(),
+    private val executor: ExecutorService,
     private val dateTimeService: DateTimeService = DefaultDateTimeService(),
     private val cronParser: CronParser = CronParser(CronDefinitionBuilder.instanceDefinitionFor(QUARTZ)),
     private val cronDescriptor: CronDescriptor = CronDescriptor.instance(Locale.UK),

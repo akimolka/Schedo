@@ -26,7 +26,9 @@ class Waiter(
     }
 
     fun sleepPollingInterval() {
-        sleep(pollingInterval.toMillis())
+        if (pollingInterval > Duration.ZERO) {
+            sleep(pollingInterval.toMillis())
+        }
     }
 
     fun waitLightLoad(executions: AtomicInteger) {
