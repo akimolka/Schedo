@@ -114,20 +114,11 @@ class PostgresExecutionsRepository (
         }
     }
 
-    override fun clearCancelled(task: TaskName): Boolean {
-        val sql = """
-            UPDATE SchedoExecutions
-            SET cancelled = FALSE, cancelledAt = NULL
-            WHERE name = ? AND cancelled <> FALSE
-        """.trimIndent()
-
-        val conn = transactionManager.getConnection()
-        return conn.prepareStatement(sql).use { pstmt ->
-            pstmt.setString(1, task.value)
-            pstmt.executeUpdate() > 0
-        }
-    }
-
+    /** This method is called as filtering after task has been picked.
+     * If at this moment cancelled flag is up, taskInstance is considered cancelled
+     * (StatusRepository.updateStatus method is called. For this call timestamp is needed)
+     * and is not submitted into executor.
+     */
     override fun whenCancelled(task: TaskName): OffsetDateTime? {
         val sql = """
             UPDATE SchedoExecutions

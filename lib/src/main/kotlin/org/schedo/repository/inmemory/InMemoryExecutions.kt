@@ -8,13 +8,19 @@ import java.time.OffsetDateTime
 import java.util.concurrent.ConcurrentHashMap
 
 data class ExecutionEntry(
+    val currentInstance: TaskInstanceID,
+    val status: TaskStatus,
     val retryCount: Int = 0,
+    val cancelled: Boolean = false,
+    val cancelledAt: OffsetDateTime? = null
 )
 class InMemoryExecutions : ExecutionsRepository {
     private val executions = ConcurrentHashMap<TaskName, ExecutionEntry>()
 
     override fun setRetryCount(task: TaskName, value: Int) {
-        executions[task] = ExecutionEntry(value)
+        executions.computeIfPresent(task){ _, executionEntry ->
+            executionEntry.copy(retryCount = value)
+        }
     }
 
     override fun addRetryCount(task: TaskName, delta: Int) {
@@ -27,26 +33,69 @@ class InMemoryExecutions : ExecutionsRepository {
         (executions[task]?.retryCount ?: 0).toUInt()
 
     override fun updateStatus(task: TaskName, instanceID: TaskInstanceID, status: TaskStatus) {
-        TODO("Not yet implemented")
+        if (status != TaskStatus.RUNNING && status != TaskStatus.FINISHED) {
+            return
+        }
+        if (status == TaskStatus.FINISHED && executions[task]?.currentInstance != instanceID) {
+            return
+        }
+
+        executions.compute(task) { _, existing ->
+            if (status == TaskStatus.FINISHED && existing != null && existing.currentInstance != instanceID) {
+                // outdated
+                return@compute existing
+            }
+
+            existing
+                ?.copy(currentInstance = instanceID, status = status)
+                ?: ExecutionEntry(
+                currentInstance = instanceID,
+                status = status,
+            )
+        }
     }
 
     override fun cancel(task: TaskName, moment: OffsetDateTime): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    override fun clearCancelled(task: TaskName): Boolean {
-        TODO("Not yet implemented")
+        var cancelled = false
+        executions.computeIfPresent(task){ _, value ->
+            if (!value.cancelled) {
+                cancelled = true
+                value.copy(cancelled = true, cancelledAt = moment)
+            } else {
+                value
+            }
+        }
+        return cancelled
     }
 
     override fun whenCancelled(task: TaskName): OffsetDateTime? {
-        TODO("Not yet implemented")
+        var cancelledAt: OffsetDateTime? = null
+        executions.computeIfPresent(task){ _, value ->
+            if (value.cancelled) {
+                cancelledAt = value.cancelledAt
+                value.copy(status = TaskStatus.CANCELLED)
+            } else {
+                value
+            }
+        }
+        return cancelledAt
     }
 
     override fun tryResume(task: TaskName): Boolean {
-        TODO("Not yet implemented")
+        var resumed = false
+        executions.computeIfPresent(task){ _, value ->
+            if (value.status == TaskStatus.FINISHED || value.status == TaskStatus.CANCELLED) {
+                resumed = true
+                value.copy(status = TaskStatus.RESUMED, cancelled = false)
+            } else {
+                value
+            }
+        }
+        return resumed
     }
 
     override fun getStatusAndCancelled(task: TaskName): Pair<TaskStatus, Boolean>? {
-        TODO("Not yet implemented")
+        val execution = executions[task] ?: return null
+        return Pair(execution.status, execution.cancelled)
     }
 }

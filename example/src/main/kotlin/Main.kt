@@ -94,7 +94,7 @@ fun serverExample2(scheduler: Scheduler) {
     scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
         println("Hello world!")
     }
-    scheduler.scheduleRecurring("Intrusive", "*/2 * * * * ?") {
+    scheduler.scheduleRecurring("Intrusive", "*/5 * * * * ?") {
         println("I'm here!")
     }
     scheduler.scheduleRecurring("Rare", Duration.ofMinutes(1)) {
@@ -103,8 +103,8 @@ fun serverExample2(scheduler: Scheduler) {
     scheduler.scheduleRecurring("Looong", Duration.ofSeconds(10)) {
         Thread.sleep(Duration.ofSeconds(20))
     }
-    scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(3),
-        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(1)))
+    scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(6),
+        RetryPolicy.FixedDelay(3u, Duration.ofSeconds(2)))
     {
         if (Random.nextInt(0, 2) == 0) {
             println("Faulty failed")
@@ -128,7 +128,7 @@ fun main() {
 
     // Scheduler settings
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
+        //.dataSource(source)
         .launchServer()
         .executionThreads(2)
         .build()

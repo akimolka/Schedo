@@ -28,12 +28,7 @@ interface ExecutionsRepository {
      * False if task was already cancelled
      */
     fun cancel(task: TaskName, moment: OffsetDateTime): Boolean
-    /**
-     * Clears flag 'cancelled'.
-     * @return Whether the action changed the cancelled state.
-     * False if task was not cancelled.
-     */
-    fun clearCancelled(task: TaskName): Boolean
+
     fun whenCancelled(task: TaskName): OffsetDateTime?
 
     /** @return whether action was successful
