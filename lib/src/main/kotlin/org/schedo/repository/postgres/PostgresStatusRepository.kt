@@ -4,60 +4,98 @@ import kotlinx.serialization.json.Json
 import org.schedo.repository.*
 import org.schedo.task.TaskInstanceID
 import org.schedo.task.TaskName
+import java.sql.Connection
 import java.sql.ResultSet
 import java.time.OffsetDateTime
-import javax.sql.DataSource
 
 class PostgresStatusRepository (
-    private val dataSource: DataSource
+    private val transactionManager: DataSourceTransaction
 ) : StatusRepository {
     private val json = Json { prettyPrint = false; encodeDefaults = true }
 
-    override fun insert(instance: TaskInstanceID, moment: OffsetDateTime) {
+    override fun insert(instance: TaskInstanceID, scheduledFor: OffsetDateTime, createdAt: OffsetDateTime) {
         val insertSQL = """
-            INSERT INTO SchedoStatus (id, status, scheduledAt)
-            VALUES(?, ?, ?)
+            INSERT INTO SchedoStatus (id, status, scheduledFor, createdAt)
+            VALUES(?, ?, ?, ?)
             ON CONFLICT (id) DO NOTHING
         """.trimIndent()
 
-        dataSource.connection.use { connection ->
-            connection.prepareStatement(insertSQL).use { pstmt ->
-                pstmt.setString(1, instance.value)
-                pstmt.setString(2, Status.SCHEDULED.name)
-                pstmt.setObject(3, moment)
-                pstmt.executeUpdate()
-            }
+        val connection = transactionManager.getConnection()
+        connection.prepareStatement(insertSQL).use { pstmt ->
+            pstmt.setString(1, instance.value)
+            pstmt.setString(2, Status.SCHEDULED.name)
+            pstmt.setObject(3, scheduledFor)
+            pstmt.setObject(4, createdAt)
+            pstmt.executeUpdate()
         }
     }
 
     override fun updateStatus(status: Status, instance: TaskInstanceID, moment: OffsetDateTime, info: AdditionalInfo?) {
-        val column = when (status) {
-            Status.SCHEDULED -> "scheduledAt"
-            Status.ENQUEUED -> "enqueuedAt"
-            Status.STARTED -> "startedAt"
-            Status.COMPLETED -> "finishedAt"
-            Status.FAILED -> "finishedAt"
+        val timeColumn = when (status) {
+            Status.SCHEDULED -> "createdAt"
+            Status.ENQUEUED  -> "enqueuedAt"
+            Status.STARTED   -> "startedAt"
+            Status.COMPLETED, Status.FAILED, Status.CANCELLED -> "finishedAt"
         }
 
-        val updateSQL = """
-            UPDATE SchedoStatus
-            SET status = ?,
-                $column = ?,
+        // Entry associated with this instance won't be changed by other servers
+        // So SELECT ... FOR UPDATE is unnecessary
+        val readInfoSql = """
+        SELECT additionalInfo
+            FROM SchedoStatus
+            WHERE id = ?
+        """.trimIndent()
+
+        val updateBase = """
+        UPDATE SchedoStatus
+           SET status = ?,
+               $timeColumn = ?
+        """.trimIndent()
+
+        // If info is null, additionalInfo in SchedoStatus in not updated
+        // Otherwise, previous additionalInfo is read, values are merged and new value is written
+        val updateSqlWithInfo = """
+            $updateBase,
                 additionalInfo = ?
             WHERE id = ?
         """.trimIndent()
 
-        val infoJson = info?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
+        val updateSqlWithoutInfo = """
+            $updateBase
+            WHERE id = ?
+        """.trimIndent()
 
-        dataSource.connection.use { conn ->
-            conn.prepareStatement(updateSQL).use { pstmt ->
-                pstmt.setString(1, status.name)
-                pstmt.setObject(2, moment)
-                if (infoJson != null) pstmt.setString(3, infoJson)
-                else pstmt.setNull(3, java.sql.Types.VARCHAR)
-                pstmt.setString(4, instance.value)
-                pstmt.executeUpdate()
+        val connection = transactionManager.getConnection()
+        val mergedInfoJson: String? = if (info != null) {
+            var prevInfo: AdditionalInfo? = null
+            connection.prepareStatement(readInfoSql).use { ps ->
+                ps.setString(1, instance.value)
+                ps.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        prevInfo = loadAdditionalInfo(rs)
+                    }
+                }
             }
+            mergeInfo(prevInfo, info)
+                ?.let { json.encodeToString(AdditionalInfo.serializer(), it) }
+        } else {
+            null
+        }
+
+        val sql = if (info != null) updateSqlWithInfo else updateSqlWithoutInfo
+        connection.prepareStatement(sql).use { ps ->
+            ps.setString(1, status.name)         // status
+            ps.setObject(2, moment)              // timestamp column
+
+            if (info != null) {
+                // bind merged additionalInfo JSON
+                ps.setString(3, mergedInfoJson)
+                ps.setString(4, instance.value)  // WHERE id=?
+            } else {
+                // no additionalInfo param, so idx=3 is id
+                ps.setString(3, instance.value)
+            }
+            ps.executeUpdate()
         }
     }
 
@@ -73,28 +111,27 @@ class PostgresStatusRepository (
             WHERE finishedAt IS NOT NULL
         """.trimIndent()
 
-        return dataSource.connection.use { conn ->
-            conn.prepareStatement(sql).use { ps ->
-                ps.executeQuery().use { rs ->
-                    val results = mutableListOf<FinishedTask>()
-                    while (rs.next()) {
-                        val instanceId = TaskInstanceID(rs.getString("id"))
-                        val taskName   = TaskName(rs.getString("name"))
-                        val status     = Status.valueOf(rs.getString("status"))
-                        val finishedAt = rs.getObject(
-                            "finishedAt", OffsetDateTime::class.java
-                        )
+        val connection = transactionManager.getConnection()
+        return connection.prepareStatement(sql).use { ps ->
+            ps.executeQuery().use { rs ->
+                val results = mutableListOf<FinishedTask>()
+                while (rs.next()) {
+                    val instanceId = TaskInstanceID(rs.getString("id"))
+                    val taskName   = TaskName(rs.getString("name"))
+                    val status     = Status.valueOf(rs.getString("status"))
+                    val finishedAt = rs.getObject(
+                        "finishedAt", OffsetDateTime::class.java
+                    )
 
-                        results += FinishedTask(
-                            instanceID     = instanceId,
-                            taskName       = taskName,
-                            status         = status,
-                            finishedAt     = finishedAt,
-                            additionalInfo = loadAdditionalInfo(rs)
-                        )
-                    }
-                    results
+                    results += FinishedTask(
+                        instanceID     = instanceId,
+                        taskName       = taskName,
+                        status         = status,
+                        finishedAt     = finishedAt,
+                        additionalInfo = loadAdditionalInfo(rs)
+                    )
                 }
+                results
             }
         }
     }
@@ -109,22 +146,21 @@ class PostgresStatusRepository (
             SELECT *
             FROM SchedoStatus
               JOIN ids USING (id)
-            WHERE ? <= scheduledAt AND scheduledAt <= ?
-            ORDER BY scheduledAt DESC
+            WHERE ? <= scheduledFor AND scheduledFor <= ?
+            ORDER BY createdAt DESC
         """.trimIndent()
 
-        return dataSource.connection.use { conn ->
-            conn.prepareStatement(sql).use { ps ->
-                ps.setString(1, taskName.value)
-                ps.setObject(2, from)
-                ps.setObject(3, to)
-                ps.executeQuery().use { rs ->
-                    val results = mutableListOf<StatusEntry>()
-                    while (rs.next()) {
-                        results += loadRow(rs)
-                    }
-                    results
+        val connection = transactionManager.getConnection()
+        return connection.prepareStatement(sql).use { ps ->
+            ps.setString(1, taskName.value)
+            ps.setObject(2, from)
+            ps.setObject(3, to)
+            ps.executeQuery().use { rs ->
+                val results = mutableListOf<StatusEntry>()
+                while (rs.next()) {
+                    results += loadRow(rs)
                 }
+                results
             }
         }
     }
@@ -138,21 +174,20 @@ class PostgresStatusRepository (
             SELECT *
             FROM SchedoStatus
               JOIN names USING (id)
-            WHERE ? <= scheduledAt AND scheduledAt <= ?
-            ORDER BY scheduledAt DESC
+            WHERE ? <= scheduledFor AND scheduledFor <= ?
+            ORDER BY createdAt DESC
         """.trimIndent()
 
-        return dataSource.connection.use { conn ->
-            conn.prepareStatement(sql).use { ps ->
-                ps.setObject(1, from)
-                ps.setObject(2, to)
-                ps.executeQuery().use { rs ->
-                    val results = mutableListOf<Pair<TaskName, StatusEntry>>()
-                    while (rs.next()) {
-                        results += Pair(TaskName(rs.getString("name")), loadRow(rs))
-                    }
-                    results
+        val connection = transactionManager.getConnection()
+        return connection.prepareStatement(sql).use { ps ->
+            ps.setObject(1, from)
+            ps.setObject(2, to)
+            ps.executeQuery().use { rs ->
+                val results = mutableListOf<Pair<TaskName, StatusEntry>>()
+                while (rs.next()) {
+                    results += Pair(TaskName(rs.getString("name")), loadRow(rs))
                 }
+                results
             }
         }
     }
@@ -170,7 +205,8 @@ class PostgresStatusRepository (
         return StatusEntry(
             instance = TaskInstanceID(rs.getString("id")),
             status = Status.valueOf(rs.getString("status")),
-            scheduledAt = rs.getObject("scheduledAt", OffsetDateTime::class.java),
+            scheduledFor = rs.getObject("scheduledFor", OffsetDateTime::class.java),
+            createdAt = rs.getObject("createdAt", OffsetDateTime::class.java),
             enqueuedAt = rs.getObject("enqueuedAt", OffsetDateTime::class.java),
             startedAt = rs.getObject("startedAt", OffsetDateTime::class.java),
             finishedAt = rs.getObject("finishedAt", OffsetDateTime::class.java),

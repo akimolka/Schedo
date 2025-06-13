@@ -51,7 +51,7 @@ abstract class Task(
 
         if (delay != null) {
             val now = taskManager.dateTimeService.now()
-            taskManager.schedule(name, now + delay)
+            taskManager.schedule(name, now + delay, isRetry=true)
         } else {
             onFailure(taskManager)
         }
@@ -75,20 +75,16 @@ abstract class Task(
         failureHandlers.forEach{ it(taskManager) }
     }
 
-    fun onEnqueued(id: TaskInstanceID, taskManager: TaskManager) {
-        taskManager.updateTaskStatusEnqueued(id)
-    }
-
     fun exec(id: TaskInstanceID, taskManager: TaskManager) = try {
         taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {
             run()
         }
         onSuccess(taskManager)
-        taskManager.updateTaskStatusFinished(id, TaskResult.Success(Duration.ofMillis(timeSpending)))
+        taskManager.updateTaskStatusFinished(name, id, TaskResult.Success(Duration.ofMillis(timeSpending)))
     } catch (e: Exception) {
         onException(e, taskManager)
-        taskManager.updateTaskStatusFinished(id, TaskResult.Failed(e))
+        taskManager.updateTaskStatusFinished(name, id, TaskResult.Failed(e))
     }
 }
 

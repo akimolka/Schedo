@@ -11,7 +11,6 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.schedo.repository.*
 import org.schedo.util.DateTimeService
 import org.schedo.util.DefaultDateTimeService
-import repository.RetryRepository
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
@@ -29,40 +28,61 @@ fun TaskResult.toStatus(): Status = when(this) {
 class TaskManager(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
-    private val retryRepository: RetryRepository,
+    private val executionsRepository: ExecutionsRepository,
+    private val tm: TransactionManager,
     val taskResolver: TaskResolver = TaskResolver(),
     val dateTimeService: DateTimeService = DefaultDateTimeService(),
 ) {
 
     fun pickDueNow(): List<TaskInstance> =
-        tasksRepository.pickTaskInstancesDue(dateTimeService.now())
-            .mapNotNull { (id, name) -> taskResolver.getTask(name)?.let {
-                it.onEnqueued(id, this)
-                TaskInstance(id, it)
-            } }
+        tm.transaction {
+            tasksRepository.pickTaskInstancesDue(dateTimeService.now())
+                .mapNotNull { (id, name) ->
+                    val cancelMoment = executionsRepository.whenCancelled(name)
+                    if (cancelMoment != null) {
+                        statusRepository.updateStatus(Status.CANCELLED, id, cancelMoment)
+                        null
+                    } else {
+                        taskResolver.getTask(name)?.let {
+                            statusRepository.updateStatus(Status.ENQUEUED, id, dateTimeService.now())
+                            TaskInstance(id, it)
+                        }
+                    }
+                }
+        }
 
-    fun updateTaskStatusEnqueued(taskInstanceID: TaskInstanceID) {
-        statusRepository.updateStatus(Status.ENQUEUED, taskInstanceID, dateTimeService.now())
-    }
+    fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) =
+        tm.transaction {
+            statusRepository.updateStatus(Status.STARTED, taskInstanceID, dateTimeService.now())
+        }
 
-    fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) {
-        statusRepository.updateStatus(Status.STARTED, taskInstanceID, dateTimeService.now())
-    }
-
-    fun updateTaskStatusFinished(taskInstanceID: TaskInstanceID, result: TaskResult) {
-        when (result) {
-            is TaskResult.Failed -> {
-                logger.error{"taskInstance $taskInstanceID failed with ${result.e}"}
-
-                val info = AdditionalInfo(
+    fun updateTaskStatusFinished(taskName: TaskName, taskInstanceID: TaskInstanceID, result: TaskResult) {
+        val info = when (result) {
+            is TaskResult.Failed -> AdditionalInfo(
                     errorMessage = result.e.message ?: "Unknown error",
                     stackTrace = result.e.stackTraceToString()
-                )
-                statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
-            }
-            is TaskResult.Success -> {
-                statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now())
-            }
+            )
+            is TaskResult.Success -> null
+        }
+
+        tm.transaction {
+            statusRepository.updateStatus(result.toStatus(), taskInstanceID, dateTimeService.now(), info)
+            executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.FINISHED)
+        }
+    }
+
+    private fun scheduleImpl(
+        taskName: TaskName, moment: OffsetDateTime,
+        isRetry: Boolean, taskInstanceID: TaskInstanceID) {
+        val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
+        if (added) {
+            logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
+            statusRepository.insert(taskInstanceID, moment, dateTimeService.now())
+            executionsRepository.updateStatus(taskName, taskInstanceID, TaskStatus.RUNNING)
+            if (isRetry) executionsRepository.increaseRetryCount(taskName)
+            else executionsRepository.resetRetryCount(taskName)
+        } else {
+            logger.warn{"Did not add to the repository: taskInstance $taskInstanceID of task $taskName"}
         }
     }
 
@@ -76,13 +96,10 @@ class TaskManager(
      */
     fun schedule(
         taskName: TaskName, moment: OffsetDateTime,
+        isRetry: Boolean = false,
         taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
-        val added = tasksRepository.add(ScheduledTaskInstance(taskInstanceID, taskName, moment))
-        if (added) {
-            logger.info{"Added to the repository: taskInstance $taskInstanceID of task $taskName to execute at $moment"}
-            statusRepository.insert(taskInstanceID, moment)
-        } else {
-            logger.warn{"Did not add to the repository: taskInstance $taskInstanceID of task $taskName"}
+        tm.transaction {
+            scheduleImpl(taskName, moment, isRetry, taskInstanceID)
         }
     }
 
@@ -94,7 +111,7 @@ class TaskManager(
     fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
         val firstInstanceID = TaskInstanceID(task.name.value)
-        schedule(task.name, moment, firstInstanceID)
+        schedule(task.name, moment, false, firstInstanceID)
     }
 
     /**
@@ -105,5 +122,28 @@ class TaskManager(
      * minimum of limit and number of fails after last success is returned.
      */
     fun failedCount(taskName: TaskName, limit: UInt) =
-        retryRepository.getFailedCount(taskName, limit)
+        tm.transaction {
+            executionsRepository.getRetryCount(taskName)
+        }
+
+    fun resume(taskName: TaskName): Boolean =
+        tm.transaction {
+            val resumed = executionsRepository.tryResume(taskName)
+            if (resumed) {
+                val taskInstanceID = TaskInstanceID(UUID.randomUUID().toString())
+                val now = dateTimeService.now()
+                scheduleImpl(taskName, now, false, taskInstanceID)
+                true
+            } else {
+                false
+            }
+        }
+
+    fun forceResume(taskName: TaskName) =
+        tm.transaction {
+            executionsRepository.forceResume(taskName)
+            val taskInstanceID = TaskInstanceID(UUID.randomUUID().toString())
+            val now = dateTimeService.now()
+            scheduleImpl(taskName, now, false, taskInstanceID)
+        }
 }

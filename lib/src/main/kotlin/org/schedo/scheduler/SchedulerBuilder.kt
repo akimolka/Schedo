@@ -5,18 +5,12 @@ import org.schedo.server.TaskController
 import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResolver
 import org.schedo.repository.*
-import org.schedo.repository.inmemory.InMemoryJoin
-import org.schedo.repository.inmemory.InMemoryStatus
-import org.schedo.repository.inmemory.InMemoryTasks
-import org.schedo.repository.postgres.PostgresStatusRepository
-import org.schedo.repository.postgres.PostgresTasksRepository
-import org.schedo.repository.postgres.createPostgresTables
+import org.schedo.repository.inmemory.*
+import org.schedo.repository.postgres.*
 import org.schedo.server.SchedoServer
+import org.schedo.util.DateTimeService
+import org.schedo.util.DefaultDateTimeService
 import org.schedo.waiter.Waiter
-import repository.RetryRepository
-import repository.postgres.PostgresRetryRepository
-import repository.ram.InMemoryRetry
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.sql.DataSource
 import java.time.Duration
@@ -77,35 +71,42 @@ class SchedulerBuilder {
 
         val tasksRepository: TasksRepository
         val statusRepository: StatusRepository
-        val retryRepository: RetryRepository
+        val executionsRepository: ExecutionsRepository
+        val transactionManager: TransactionManager
 
         when (dsType) {
             null -> {
                 val inMemoryJoin = InMemoryJoin()
-                val inMemTasks  = InMemoryTasks(inMemoryJoin)
-                val inMemStatus = InMemoryStatus(inMemoryJoin)
-                tasksRepository = inMemTasks
-                statusRepository = inMemStatus
-                retryRepository = InMemoryRetry(inMemTasks, inMemStatus)
+                tasksRepository = InMemoryTasks(inMemoryJoin)
+                statusRepository = InMemoryStatus(inMemoryJoin)
+                executionsRepository = InMemoryExecutions()
+
+                transactionManager = InMemoryTransaction()
             }
 
             is DataSourceType.Postgres -> {
                 val pgDataSource = checkNotNull(dataSource) { "Postgres data source is not set" }
 
                 createPostgresTables(pgDataSource)
-                tasksRepository = PostgresTasksRepository(pgDataSource)
-                statusRepository = PostgresStatusRepository(pgDataSource)
-                retryRepository = PostgresRetryRepository(pgDataSource)
+                transactionManager = DataSourceTransaction(pgDataSource)
+
+                tasksRepository = PostgresTasksRepository(transactionManager)
+                statusRepository = PostgresStatusRepository(transactionManager)
+                executionsRepository = PostgresExecutionsRepository(transactionManager)
             }
 
             is DataSourceType.Other ->
                 error("${dsType.name} is not supported")
         }
-        val taskManager = TaskManager(tasksRepository, statusRepository, retryRepository)
+
+        val dateTimeService: DateTimeService = DefaultDateTimeService()
+        val taskManager = TaskManager(tasksRepository, statusRepository, executionsRepository,
+            transactionManager, TaskResolver(), dateTimeService)
 
         var server: SchedoServer? = null
         if (launchServer) {
-            val taskController = TaskController(tasksRepository, statusRepository)
+            val taskController = TaskController(tasksRepository, statusRepository,
+                executionsRepository, transactionManager, taskManager)
             server = SchedoServer(serverPort, taskController)
         }
 
@@ -116,6 +117,6 @@ class SchedulerBuilder {
                 "\tdataSourceType: $dataSourceType\n" +
                 "\texecutionThreadsCount: $executionThreadsCount"}
 
-        return Scheduler(taskManager, server, waiter, executor)
+        return Scheduler(taskManager, server, waiter, executor, dateTimeService)
     }
 }

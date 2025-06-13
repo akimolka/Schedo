@@ -55,7 +55,7 @@ class SchedoServer(
                     call.respond(taskController.failedTasks())
                 }
                 get("/tasks/{taskName}") {
-                    // What if there is a task "failed"?
+                    // TODO What if there is a task "failed"?
                     val nameParam = call.parameters["taskName"]
                     if (nameParam == null) {
                         call.respond(
@@ -65,10 +65,9 @@ class SchedoServer(
                         return@get
                     }
 
-                    val history: List<StatusEntry> =
-                        taskController.taskHistory(TaskName(nameParam))
+                    val detailedTaskInfo = taskController.taskHistory(TaskName(nameParam))
 
-                    if (history.isEmpty()) {
+                    if (detailedTaskInfo.history.isEmpty()) {
                         call.respond(
                             HttpStatusCode.NotFound,
                             "No task named '$nameParam'"
@@ -76,7 +75,7 @@ class SchedoServer(
                         return@get
                     }
 
-                    call.respond(history)
+                    call.respond(detailedTaskInfo)
                 }
                 get("/tasks") {
                     val from = call.parseTime("from", OffsetDateTime.MIN) ?: return@get
@@ -88,6 +87,58 @@ class SchedoServer(
                 }
                 get("/") {
                     call.respondText("Server is healthy", ContentType.Text.Html)
+                }
+
+                post("/tasks/{taskName}/cancel") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    val success = taskController.cancelTask(TaskName(nameParam))
+
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, "Cancelled")
+                    } else {
+                        call.respond(HttpStatusCode.Conflict, "Task is already finished or cancelled")
+                    }
+                }
+
+                post("/tasks/{taskName}/resume") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    val success = taskController.resumeTask(TaskName(nameParam))
+
+                    if (success) {
+                        call.respond(HttpStatusCode.OK, "Resumed")
+                    } else {
+                        call.respond(HttpStatusCode.Conflict, "Task is already running or resumed")
+                    }
+                }
+
+                post("/tasks/{taskName}/forceResume") {
+                    val nameParam = call.parameters["taskName"]
+                    if (nameParam == null) {
+                        call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Missing path parameter 'taskName'"
+                        )
+                        return@post
+                    }
+
+                    taskController.forceResumeTask(TaskName(nameParam))
+                    call.respond(HttpStatusCode.OK, "ForceResumed")
                 }
             }
         }.start()

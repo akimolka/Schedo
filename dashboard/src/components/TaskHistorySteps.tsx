@@ -1,8 +1,7 @@
 import { Steps } from 'antd'
-import { CheckCircleTwoTone, CloseCircleTwoTone, QuestionCircleTwoTone } from '@ant-design/icons'
+import { CheckCircleTwoTone, CloseCircleTwoTone, QuestionCircleTwoTone, StopTwoTone } from '@ant-design/icons'
 import type { StatusEntry } from './TaskHistoryTable.tsx'
 
-// TODO for some reason it was "timestamp?: string | null"
 function formatTimestamp(timestamp?: string): string {
     if (!timestamp) return '-'
     const date = new Date(timestamp)
@@ -21,19 +20,37 @@ function formatTimestamp(timestamp?: string): string {
     const year = date.getFullYear()
     const month = pad(date.getMonth() + 1)
     const day = pad(date.getDate())
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    return `${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`
 }
 
-const getFinishedIcon = ({ entry }: { entry: StatusEntry }) => {
+function formatDescription(timestamp?: string) {
+    return (<div style={{
+        width: '100px',
+        textAlign: 'left',
+        padding: '0 auto',
+        margin: '0 auto',
+        whiteSpace: 'pre-wrap'
+    }}>
+        {formatTimestamp(timestamp)}
+    </div>)
+}
+
+function createdTitle(scheduledFor?: string) {
+    return 'Scheduled for ' + formatTimestamp(scheduledFor)
+}
+
+const getFinishedIcon = ({entry}: { entry: StatusEntry }) => {
     if (!entry.finishedAt) return null
-    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a" />
-    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f" />
-    return <QuestionCircleTwoTone twoToneColor="#d9d9d9" />
+    if (entry.status === 'COMPLETED') return <CheckCircleTwoTone twoToneColor="#52c41a"/>
+    if (entry.status === 'FAILED') return <CloseCircleTwoTone twoToneColor="#ff4d4f"/>
+    return <QuestionCircleTwoTone twoToneColor="#d9d9d9"/>
 }
 
 function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
+  if (entry.status == 'CANCELLED') return StepsCancelled({entry})
+
   const steps = [
-    { title: 'Scheduled', time: entry.scheduledAt },
+    { title: createdTitle(entry.scheduledFor), time: entry.createdAt },
     { title: 'Enqueued', time: entry.enqueuedAt },
     { title: 'Started', time: entry.startedAt },
     { title: 'Finished', time: entry.finishedAt }
@@ -51,12 +68,33 @@ function TaskHistorySteps({ entry }: { entry: StatusEntry }) {
       items={steps.map((step, index) => {
           return {
               title: step.title,
-              description: formatTimestamp(step.time),
+              description: formatDescription(step.time),
               icon: index === 3 ? getFinishedIcon({entry}) : undefined
           }
       })}
     />
   )
+}
+
+function StepsCancelled({ entry }: { entry: StatusEntry }) {
+    const steps = [
+        { title: createdTitle(entry.scheduledFor), time: entry.createdAt },
+        { title: 'Cancelled', time: entry.finishedAt }
+    ]
+
+    return (
+        <Steps
+            size="small"
+            current={1}
+            items={steps.map((step, index) => {
+                return {
+                    title: step.title,
+                    description: formatDescription(step.time),
+                    icon: index === 1 ? <StopTwoTone twoToneColor="#ff4d4f"/> : undefined
+                }
+            })}
+        />
+    )
 }
 
 export default TaskHistorySteps
