@@ -25,16 +25,30 @@ fun TaskResult.toStatus(): Status = when(this) {
     is TaskResult.Success -> Status.COMPLETED
 }
 
+interface ITaskManager {
+    fun pickDueNow(): List<TaskInstance>
+    fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID)
+    fun updateTaskStatusFinished(taskName: TaskName, taskInstanceID: TaskInstanceID, result: TaskResult)
+    fun schedule(taskName: TaskName, moment: OffsetDateTime, isRetry: Boolean = false,
+                 taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString()))
+    fun schedule(task: Task, moment: OffsetDateTime)
+    fun failedCount(taskName: TaskName, limit: UInt): UInt
+    fun resume(taskName: TaskName): Boolean
+    fun forceResume(taskName: TaskName)
+    val taskResolver: TaskResolver
+    val dateTimeService: DateTimeService
+}
+
 class TaskManager(
     private val tasksRepository: TasksRepository,
     private val statusRepository: StatusRepository,
     private val executionsRepository: ExecutionsRepository,
     private val tm: TransactionManager,
-    val taskResolver: TaskResolver = TaskResolver(),
-    val dateTimeService: DateTimeService = DefaultDateTimeService(),
-) {
+    override val taskResolver: TaskResolver = TaskResolver(),
+    override val dateTimeService: DateTimeService = DefaultDateTimeService(),
+) : ITaskManager {
 
-    fun pickDueNow(): List<TaskInstance> =
+    override fun pickDueNow(): List<TaskInstance> =
         tm.transaction {
             tasksRepository.pickTaskInstancesDue(dateTimeService.now())
                 .mapNotNull { (id, name) ->
@@ -51,12 +65,12 @@ class TaskManager(
                 }
         }
 
-    fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) =
+    override fun updateTaskStatusStarted(taskInstanceID: TaskInstanceID) =
         tm.transaction {
             statusRepository.updateStatus(Status.STARTED, taskInstanceID, dateTimeService.now())
         }
 
-    fun updateTaskStatusFinished(taskName: TaskName, taskInstanceID: TaskInstanceID, result: TaskResult) {
+    override fun updateTaskStatusFinished(taskName: TaskName, taskInstanceID: TaskInstanceID, result: TaskResult) {
         val info = when (result) {
             is TaskResult.Failed -> AdditionalInfo(
                     errorMessage = result.e.message ?: "Unknown error",
@@ -94,10 +108,8 @@ class TaskManager(
      * @param taskInstanceID specifies id for this run. Do not set it manually unless you know what you are doing.
      * The default value is a random UUID. [taskInstanceID] of the first run of a task is equal to the task's name.
      */
-    fun schedule(
-        taskName: TaskName, moment: OffsetDateTime,
-        isRetry: Boolean = false,
-        taskInstanceID: TaskInstanceID = TaskInstanceID(UUID.randomUUID().toString())) {
+    override fun schedule(
+        taskName: TaskName, moment: OffsetDateTime, isRetry: Boolean, taskInstanceID: TaskInstanceID) {
         tm.transaction {
             scheduleImpl(taskName, moment, isRetry, taskInstanceID)
         }
@@ -108,7 +120,7 @@ class TaskManager(
      * Must be called when and only when the task is scheduled for the first time.
      * Subsequent reschedules must use the overload which accepts [TaskName].
      */
-    fun schedule(task: Task, moment: OffsetDateTime) {
+    override fun schedule(task: Task, moment: OffsetDateTime) {
         taskResolver.addTask(task)
         val firstInstanceID = TaskInstanceID(task.name.value)
         schedule(task.name, moment, false, firstInstanceID)
@@ -121,12 +133,12 @@ class TaskManager(
      * @param limit limits the number of fails. In other words,
      * minimum of limit and number of fails after last success is returned.
      */
-    fun failedCount(taskName: TaskName, limit: UInt) =
+    override fun failedCount(taskName: TaskName, limit: UInt) =
         tm.transaction {
             executionsRepository.getRetryCount(taskName)
         }
 
-    fun resume(taskName: TaskName): Boolean =
+    override fun resume(taskName: TaskName): Boolean =
         tm.transaction {
             val resumed = executionsRepository.tryResume(taskName)
             if (resumed) {
@@ -139,7 +151,7 @@ class TaskManager(
             }
         }
 
-    fun forceResume(taskName: TaskName) =
+    override fun forceResume(taskName: TaskName) =
         tm.transaction {
             executionsRepository.forceResume(taskName)
             val taskInstanceID = TaskInstanceID(UUID.randomUUID().toString())

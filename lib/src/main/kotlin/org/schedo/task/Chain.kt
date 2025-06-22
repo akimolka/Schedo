@@ -1,10 +1,8 @@
 package org.schedo.task
 
-import org.schedo.manager.TaskManager
 import org.schedo.manager.TaskResolver
 import org.schedo.retry.RetryPolicy
 import java.time.Duration
-import java.time.OffsetDateTime
 
 /**
  * Class for chaining tasks. Note that steps are not copied.

@@ -1,7 +1,7 @@
 package org.schedo.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
-import org.schedo.manager.TaskManager
+import org.schedo.manager.ITaskManager
 import org.schedo.repository.*
 import org.schedo.task.TaskName
 import org.schedo.util.KOffsetDateTimeSerializer
@@ -37,7 +37,7 @@ class TaskController(
     private val statusRepository: StatusRepository,
     private val executionsRepository: ExecutionsRepository,
     private val tm: TransactionManager,
-    private val taskManager: TaskManager, // TODO
+    private val taskManager: ITaskManager, // TODO
 ) {
     fun countScheduledTasks(due: OffsetDateTime): Int =
         tm.transaction {
