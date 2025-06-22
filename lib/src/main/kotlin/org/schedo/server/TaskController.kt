@@ -18,7 +18,7 @@ class FailedTaskInfo (
 )
 
 @Serializable
-class AggrTaskInfo (
+data class AggrTaskInfo (
     val name: TaskName,
     val successCount: Int,
     val failureCount: Int,
@@ -110,7 +110,9 @@ class TaskController(
                     collectTaskInfo(name, entries)
                 }
         } else {
-            listOf(collectTaskInfo(taskName, statusRepository.taskHistory(taskName, from, to)))
+            tm.transaction {
+                listOf(collectTaskInfo(taskName, statusRepository.taskHistory(taskName, from, to)))
+            }
         }
     }
 
@@ -119,7 +121,7 @@ class TaskController(
         val failureCount = taskEntries.count { it.status == Status.FAILED }
 
         val lastExecutionTime = taskEntries
-            .mapNotNull { it.finishedAt }
+            .mapNotNull { it.startedAt }
             .maxOrNull()
 
         return AggrTaskInfo(
