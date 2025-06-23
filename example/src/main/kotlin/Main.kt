@@ -128,12 +128,60 @@ fun main() {
 
     // Scheduler settings
     val scheduler = SchedulerBuilder()
-        .dataSource(source)
-        .launchServer()
+        //.dataSource(source)
+        //.launchServer()
         .executionThreads(2)
         .build()
 
-   serverExample2(scheduler)
+    // One-time task
+    scheduler.scheduleAfter("Greeter", Duration.ofSeconds(40)) {
+        println("Hello world!")
+    }
+
+    // Recurring task
+    scheduler.scheduleRecurring("Faulty", Duration.ofSeconds(5),
+        RetryPolicy.ExpBackoff(3u, Duration.ofSeconds(2)))
+    {
+        Thread.sleep(Duration.ofSeconds(5))
+        if (Random.nextInt(0, 2) == 0) {
+            println("Faulty failed")
+            throw RuntimeException("Unexpected error")
+        } else {
+            println("Faulty completed, next repeat in 3s")
+        }
+    }
+
+    // Recurring chain: one -> two on success or three on failure
+    val one = Chain("StepOne",
+        RetryPolicy.FixedDelay(2u, Duration.ofSeconds(1))){
+        if (Random.nextInt(0, 2) == 0) {
+            println("StepOne failed")
+            throw RuntimeException("Unexpected error")
+        } else {
+            println("StepOne completed")
+        }
+    }
+    val two = Chain("StepTwo", null) { println("Step two") }
+    val three = Chain("StepThree", null) { println("Step three") }
+    one.andThen(two).repeat(Duration.ofSeconds(3))
+    one.orElse(three).repeat(Duration.ofSeconds(3))
+    scheduler.scheduleAfter(one, Duration.ZERO)
+
+    scheduler.scheduleRecurring("Healthcheck", Duration.ofSeconds(5)) {
+        println("System is up")
+    }
+    scheduler.scheduleRecurring("Send emails", Duration.ofSeconds(20)) {
+        if (Random.nextInt(0, 4) == 0) {
+            Thread.sleep(Duration.ofSeconds(2))
+            throw RuntimeException("User Ivan not found")
+        } else {
+            Thread.sleep(Duration.ofSeconds(5))
+            println("Emails sent")
+        }
+    }
+    scheduler.scheduleRecurring("Backup", Duration.ofSeconds(10)) {
+        Thread.sleep(Duration.ofSeconds(20))
+    }
 
     scheduler.start()
 //    Thread.sleep(50 * 1000)

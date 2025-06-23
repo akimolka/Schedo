@@ -1,6 +1,6 @@
 package org.schedo.task
 
-import org.schedo.manager.TaskManager
+import org.schedo.manager.ITaskManager
 import org.schedo.retry.RetryPolicy
 
 /**
@@ -12,9 +12,9 @@ abstract class RecurringTask(
     name: TaskName,
     private val schedule: RecurringSchedule,
     retryPolicy: RetryPolicy? = null,
-    successHandler: (TaskManager) -> Unit = {},
-    exceptionHandler: (Exception, TaskManager) -> Unit = {_, _ ->},
-    failureHandler: (TaskManager) -> Unit = {},
+    successHandler: (ITaskManager) -> Unit = {},
+    exceptionHandler: (Exception, ITaskManager) -> Unit = {_, _ ->},
+    failureHandler: (ITaskManager) -> Unit = {},
 ) : Task(
     name,
     retryPolicy,

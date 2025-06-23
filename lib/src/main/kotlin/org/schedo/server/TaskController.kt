@@ -1,7 +1,7 @@
 package org.schedo.server
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
-import org.schedo.manager.TaskManager
+import org.schedo.manager.ITaskManager
 import org.schedo.repository.*
 import org.schedo.task.TaskName
 import org.schedo.util.KOffsetDateTimeSerializer
@@ -18,7 +18,7 @@ class FailedTaskInfo (
 )
 
 @Serializable
-class AggrTaskInfo (
+data class AggrTaskInfo (
     val name: TaskName,
     val successCount: Int,
     val failureCount: Int,
@@ -37,7 +37,7 @@ class TaskController(
     private val statusRepository: StatusRepository,
     private val executionsRepository: ExecutionsRepository,
     private val tm: TransactionManager,
-    private val taskManager: TaskManager, // TODO
+    private val taskManager: ITaskManager, // TODO
 ) {
     fun countScheduledTasks(due: OffsetDateTime): Int =
         tm.transaction {
@@ -110,7 +110,9 @@ class TaskController(
                     collectTaskInfo(name, entries)
                 }
         } else {
-            listOf(collectTaskInfo(taskName, statusRepository.taskHistory(taskName, from, to)))
+            tm.transaction {
+                listOf(collectTaskInfo(taskName, statusRepository.taskHistory(taskName, from, to)))
+            }
         }
     }
 
@@ -119,7 +121,7 @@ class TaskController(
         val failureCount = taskEntries.count { it.status == Status.FAILED }
 
         val lastExecutionTime = taskEntries
-            .mapNotNull { it.finishedAt }
+            .mapNotNull { it.startedAt }
             .maxOrNull()
 
         return AggrTaskInfo(
