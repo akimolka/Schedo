@@ -2,10 +2,9 @@ package org.schedo.scheduler
 
 import java.time.temporal.TemporalAmount
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.schedo.manager.TaskManager
+import org.schedo.manager.ITaskManager
 import org.schedo.retry.RetryPolicy
 import org.schedo.task.*
 import org.schedo.util.DateTimeService
@@ -17,7 +16,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder
 import com.cronutils.parser.CronParser
 import com.cronutils.descriptor.CronDescriptor
 import com.cronutils.model.time.ExecutionTime
-import org.schedo.manager.TaskResolver
 import org.schedo.server.SchedoServer
 import org.schedo.waiter.Waiter
 import java.util.*
@@ -26,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
 private val logger = KotlinLogging.logger {}
 
 class Scheduler(
-    private val taskManager: TaskManager,
+    private val taskManager: ITaskManager,
     private val server: SchedoServer?,
     private val waiter: Waiter,
     private val executor: ExecutorService,

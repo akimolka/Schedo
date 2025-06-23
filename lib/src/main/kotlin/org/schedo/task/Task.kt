@@ -2,7 +2,7 @@ package org.schedo.task
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.serialization.Serializable
-import org.schedo.manager.TaskManager
+import org.schedo.manager.ITaskManager
 import org.schedo.manager.TaskResult
 import org.schedo.retry.RetryPolicy
 import java.time.Duration
@@ -26,9 +26,9 @@ value class TaskName(val value: String)
 abstract class Task(
     val name: TaskName,
     private val retryPolicy: RetryPolicy? = null,
-    var successHandlers: List<(TaskManager) -> Unit> = emptyList(),
-    var exceptionHandlers: List<(Exception, TaskManager) -> Unit> = emptyList(),
-    var failureHandlers: List<(TaskManager) -> Unit> = emptyList(),
+    var successHandlers: List<(ITaskManager) -> Unit> = emptyList(),
+    var exceptionHandlers: List<(Exception, ITaskManager) -> Unit> = emptyList(),
+    var failureHandlers: List<(ITaskManager) -> Unit> = emptyList(),
 ) {
     /**
      * Payload
@@ -38,11 +38,11 @@ abstract class Task(
     /**
      * Called upon successful task completion
      */
-    private fun onSuccess(taskManager: TaskManager) {
+    private fun onSuccess(taskManager: ITaskManager) {
         successHandlers.forEach{ it(taskManager) }
     }
 
-    private fun retry(e: Exception, taskManager: TaskManager) {
+    private fun retry(e: Exception, taskManager: ITaskManager) {
         var delay: Duration? = null
         if (retryPolicy != null) {
             val failedCount = taskManager.failedCount(name, retryPolicy.maxRetries)
@@ -60,7 +60,7 @@ abstract class Task(
     /**
      * Called upon minor task failure, i.e. when exception is caught
      */
-    private fun onException(e: Exception, taskManager: TaskManager) {
+    private fun onException(e: Exception, taskManager: ITaskManager) {
         exceptionHandlers.forEach{ it(e, taskManager) }
         retry(e, taskManager)
     }
@@ -70,12 +70,12 @@ abstract class Task(
      * Note that after last failed retry [onException] is called first,
      * and only then [onFailure].
      */
-    private fun onFailure(taskManager: TaskManager) {
+    private fun onFailure(taskManager: ITaskManager) {
         logger.warn {"Task '${name.value}' has failed completely'"}
         failureHandlers.forEach{ it(taskManager) }
     }
 
-    fun exec(id: TaskInstanceID, taskManager: TaskManager) = try {
+    fun exec(id: TaskInstanceID, taskManager: ITaskManager) = try {
         taskManager.updateTaskStatusStarted(id)
         val timeSpending = measureTimeMillis {
             run()
